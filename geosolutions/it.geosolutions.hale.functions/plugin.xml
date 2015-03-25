@@ -13,11 +13,11 @@
          point="eu.esdihumboldt.hale.align.function">
       <propertyFunction
             category="it.geosolutions.hale.functions"
-            cellExplanation="it.geosolutions.hale.functions.ReporjectGeometryExplanation"
-            description="Reporject Geometry"
+            cellExplanation="it.geosolutions.hale.functions.ReprojectGeometryExplanation"
+            description="Reproject Geometry"
             icon="icons/geometry.png"
-            identifier="it.geosolutions.hale.functions.reporject_geometry"
-            name="Reporject Geometry">
+            identifier="it.geosolutions.hale.functions.reproject_geometry"
+            name="Reproject Geometry">
          <targetProperties>
             <property
                   description="The property that shall hold the output geometry"
@@ -60,10 +60,10 @@
    <extension
          point="eu.esdihumboldt.hale.align.transformation">
       <propertyTransformation
-            class="it.geosolutions.hale.functions.ReporjectGeometry"
+            class="it.geosolutions.hale.functions.ReprojectGeometry"
             engine="eu.esdihumboldt.align.java"
-            function="it.geosolutions.hale.functions.reporject_geometry"
-            id="it.geosolutions.hale.functions.reporject_geometry">
+            function="it.geosolutions.hale.functions.reproject_geometry"
+            id="it.geosolutions.hale.functions.reproject_geometry">
       </propertyTransformation>
    </extension>
 

@@ -31,9 +31,9 @@ import eu.esdihumboldt.hale.common.instance.helper.InstanceTraverser;
 import eu.esdihumboldt.hale.common.schema.geometry.GeometryProperty;
 
 @Immutable
-public class ReporjectGeometry extends
+public class ReprojectGeometry extends
 AbstractSingleTargetPropertyTransformation<TransformationEngine> implements
-ReporjectGeometryFunction {
+ReprojectGeometryFunction {
 
 	@Override
 	protected Object evaluate(String transformationIdentifier,

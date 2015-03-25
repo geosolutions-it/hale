@@ -7,7 +7,7 @@ import eu.esdihumboldt.hale.common.align.model.CellUtil;
 import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.align.model.impl.AbstractCellExplanation;
 
-public class ReporjectGeometryExplanation extends AbstractCellExplanation implements ReporjectGeometryFunction{
+public class ReprojectGeometryExplanation extends AbstractCellExplanation implements ReprojectGeometryFunction{
 
 	@Override
 	protected String getExplanation(Cell cell, boolean html) {

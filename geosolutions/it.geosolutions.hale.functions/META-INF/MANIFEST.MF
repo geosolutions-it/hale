@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Reporject
+Bundle-Name: Reproject
 Bundle-SymbolicName: it.geosolutions.hale.functions;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: it.geosolutions.hale.functions.Activator
