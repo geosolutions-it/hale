@@ -19,10 +19,16 @@
 
    <requires>
       <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="com.google.guava" version="15.0.0" match="greaterOrEqual"/>
       <import plugin="eu.esdihumboldt.hale.common.align" version="2.9.0" match="greaterOrEqual"/>
       <import plugin="eu.esdihumboldt.hale.common.core" version="2.9.0" match="greaterOrEqual"/>
-      <import plugin="com.google.guava" version="15.0.0" match="greaterOrEqual"/>
       <import plugin="eu.esdihumboldt.hale.common.schema" version="2.9.0" match="greaterOrEqual"/>
+      <import plugin="org.geotools" version="12.2.0" match="greaterOrEqual"/>
+      <import plugin="org.opengis" version="12.2.0" match="greaterOrEqual"/>
+      <import plugin="com.vividsolutions.jts" version="1.13.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.hale.common.instance" version="2.9.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.cst.functions.geometric" version="2.9.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.cst" version="2.9.0" match="greaterOrEqual"/>
    </requires>
 
    <plugin
