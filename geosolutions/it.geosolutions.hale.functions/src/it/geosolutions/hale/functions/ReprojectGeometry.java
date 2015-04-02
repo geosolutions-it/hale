@@ -35,6 +35,8 @@ public class ReprojectGeometry extends
 AbstractSingleTargetPropertyTransformation<TransformationEngine> implements
 ReprojectGeometryFunction {
 
+	private MathTransform transform;
+
 	@Override
 	protected Object evaluate(String transformationIdentifier,
 			TransformationEngine engine,
@@ -57,19 +59,36 @@ ReprojectGeometryFunction {
 		CoordinateReferenceSystem targetCRS = sourceCRS;
 
 		// Get input parameter		
-		String srs = getOptionalParameter(PARAMETER_REFERENCE_SYSTEM, null).as(String.class);
+		String srs = getParameterChecked(PARAMETER_REFERENCE_SYSTEM).as(String.class);
 		if (srs != null){
 			try {
 				targetCRS = CRS.decode(srs);
 			} catch (FactoryException e) {
 				throw new TransformationException("Error to find destiantion Cordinate reference System.", e);
 			}
-			// Transform CRS		
+			// Retrieve transformation		
 			try {
-				MathTransform transform = CRS.findMathTransform(sourceCRS, targetCRS, false);
+				if(transform == null){
+					transform = CRS.findMathTransform(sourceCRS, targetCRS, false);
+				}
+			//Transformation cannot be found because the sourceCRS is missing bursa-wolf parameters
+			} catch (FactoryException ex1) {
+				try {
+					Integer code = CRS.lookupEpsgCode(sourceCRS, true);
+					if (code != null) {
+						transform = CRS.findMathTransform(CRS.decode("EPSG:" + code, true), targetCRS);
+					}else{
+						throw new TransformationException("Unable to find requested transformation from: " + sourceCRS + " to " + targetCRS);
+					}	
+				}catch (FactoryException ex2) {
+					throw new TransformationException("Problem on execute transformation from: " + sourceCRS + " to " + targetCRS, ex2);
+				}
+			}
+			// Apply transformation
+			try {
 				resultGeometry = JTS.transform( sourceGeometry, transform);
-			} catch (FactoryException | MismatchedDimensionException | TransformException e) {
-				throw new TransformationException("Error to convert Cordinate reference System.", e);
+			} catch (MismatchedDimensionException | TransformException e) {
+				throw new TransformationException("Problem on execute transformation from: " + sourceCRS + " to " + targetCRS, e);
 			}
 		}
 
