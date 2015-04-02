@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="eu.esdihumboldt.hale.align.category">
+      <category
+            description="Geosolutions functions"
+            id="it.geosolutions.hale.functions"
+            name="Geosolutions">
+      </category>
+   </extension>
+   <extension
+         point="eu.esdihumboldt.hale.align.function">
+      <propertyFunction
+            category="it.geosolutions.hale.functions"
+            cellExplanation="it.geosolutions.hale.functions.ReprojectGeometryExplanation"
+            description="Reproject Geometry"
+            icon="icons/geometry.png"
+            identifier="it.geosolutions.hale.functions.reproject_geometry"
+            name="Reproject Geometry">
+         <targetProperties>
+            <property
+                  description="The property that shall hold the output geometry"
+                  eager="false"
+                  label="Target geometry"
+                  maxOccurrence="1"
+                  minOccurrence="1"
+                  name="target">
+               <geometryOrParentCondition></geometryOrParentCondition>
+            </property>
+         </targetProperties>
+         <sourceProperties>
+            <property
+                  description="The property that shall hold the input geometry"
+                  eager="false"
+                  label="Source geoemtry"
+                  maxOccurrence="1"
+                  minOccurrence="1"
+                  name="source">
+               <geometryOrParentCondition></geometryOrParentCondition>
+            </property>
+         </sourceProperties>
+         <functionParameter
+               deprecated="false"
+               description="Specify the coordinate reference system for the destination geometry"
+               label="Coordinate Reference System"
+               maxOccurrence="1"
+               minOccurrence="1"
+               name="referenceSystem"
+               scriptable="false">
+            <parameterBinding
+                  class="java.lang.String">
+               <validator
+                     class="eu.esdihumboldt.cst.functions.geometric.SRSValidator">
+               </validator>
+            </parameterBinding>
+         </functionParameter>
+      </propertyFunction>
+   </extension>
+   <extension
+         point="eu.esdihumboldt.hale.align.transformation">
+      <propertyTransformation
+            class="it.geosolutions.hale.functions.ReprojectGeometry"
+            engine="eu.esdihumboldt.align.java"
+            function="it.geosolutions.hale.functions.reproject_geometry"
+            id="it.geosolutions.hale.functions.reproject_geometry">
+      </propertyTransformation>
+   </extension>
+
+</plugin>

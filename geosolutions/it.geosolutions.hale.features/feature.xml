@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="it.geosolutions.hale.features"
+      label="Features"
+      version="1.0.0.qualifier"
+      provider-name="Geosolutions">
+
+   <description url="http://www.example.com/description">
+      [Enter Feature Description here.]
+   </description>
+
+   <copyright url="http://www.example.com/copyright">
+      [Enter Copyright Description here.]
+   </copyright>
+
+   <license url="http://www.example.com/license">
+      [Enter License Description here.]
+   </license>
+
+   <requires>
+      <import plugin="org.eclipse.core.runtime"/>
+      <import plugin="com.google.guava" version="15.0.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.hale.common.align" version="2.9.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.hale.common.core" version="2.9.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.hale.common.schema" version="2.9.0" match="greaterOrEqual"/>
+      <import plugin="org.geotools" version="12.2.0" match="greaterOrEqual"/>
+      <import plugin="org.opengis" version="12.2.0" match="greaterOrEqual"/>
+      <import plugin="com.vividsolutions.jts" version="1.13.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.hale.common.instance" version="2.9.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.cst.functions.geometric" version="2.9.0" match="greaterOrEqual"/>
+      <import plugin="eu.esdihumboldt.cst" version="2.9.0" match="greaterOrEqual"/>
+   </requires>
+
+   <plugin
+         id="it.geosolutions.hale.functions"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="it.geosolutions.hale.functions.test"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
