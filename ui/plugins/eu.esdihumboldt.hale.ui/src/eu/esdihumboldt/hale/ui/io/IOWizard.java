@@ -125,7 +125,7 @@ public abstract class IOWizard<P extends IOProvider> extends Wizard implements
 	 * 
 	 * @return the action ID
 	 */
-	protected String getActionId() {
+	public String getActionId() {
 		return actionId;
 	}
 
@@ -574,7 +574,30 @@ public abstract class IOWizard<P extends IOProvider> extends Wizard implements
 					// no message, we rely on the report being shown/processed
 
 					// let advisor handle results
-					advisor.handleResults(getProvider());
+					try {
+						getContainer().run(true, false, new IRunnableWithProgress() {
+
+							@Override
+							public void run(IProgressMonitor monitor)
+									throws InvocationTargetException, InterruptedException {
+								monitor.beginTask("Completing operation...",
+										IProgressMonitor.UNKNOWN);
+								try {
+									advisor.handleResults(getProvider());
+								} finally {
+									monitor.done();
+								}
+							}
+
+						});
+					} catch (InvocationTargetException e) {
+						log.userError("Error processing results:\n"
+								+ e.getCause().getLocalizedMessage(), e.getCause());
+						return false;
+					} catch (Exception e) {
+						log.userError("Error processing results:\n" + e.getLocalizedMessage(), e);
+						return false;
+					}
 
 					// add to project service if necessary
 					if (isProjectResource)

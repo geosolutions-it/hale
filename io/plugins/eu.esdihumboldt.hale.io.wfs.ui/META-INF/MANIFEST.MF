@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: WFS I/O UI
 Bundle-SymbolicName: eu.esdihumboldt.hale.io.wfs.ui;singleton:=true
-Bundle-Version: 2.9.1.qualifier
+Bundle-Version: 2.9.2.qualifier
 Bundle-Vendor: data harmonisation panel
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: eu.esdihumboldt.hale.ui,
@@ -12,22 +12,47 @@ Require-Bundle: eu.esdihumboldt.hale.ui,
  groovy;bundle-version="2.3.7",
  org.eclipse.jface.text;bundle-version="3.9.1",
  org.geotools;bundle-version="12.2.0",
- org.opengis;bundle-version="12.2.0"
-Import-Package: com.google.common.io;version="15.0.0",
+ org.opengis;bundle-version="12.2.0",
+ de.fhg.igd.mapviewer;bundle-version="6.0.1",
+ de.fhg.igd.mapviewer.server.openstreetmap;bundle-version="6.0.0",
+ org.jdesktop.swingx;bundle-version="1.0.0",
+ org.jdesktop.swingx.mapviewer;bundle-version="6.0.0"
+Import-Package: com.google.common.base;version="15.0.0",
+ com.google.common.collect;version="15.0.0",
+ com.google.common.io;version="15.0.0",
  com.vividsolutions.jts.geom;version="1.13.0",
  de.fhg.igd.slf4jplus,
  eu.esdihumboldt.hale.common.core.io,
+ eu.esdihumboldt.hale.common.core.io.extension,
  eu.esdihumboldt.hale.common.core.io.impl,
  eu.esdihumboldt.hale.common.core.io.supplier,
  eu.esdihumboldt.hale.common.core.io.util,
+ eu.esdihumboldt.hale.common.instance.io,
  eu.esdihumboldt.hale.common.instance.io.util,
+ eu.esdihumboldt.hale.common.schema,
+ eu.esdihumboldt.hale.common.schema.io,
+ eu.esdihumboldt.hale.common.schema.io.impl,
+ eu.esdihumboldt.hale.common.schema.model,
+ eu.esdihumboldt.hale.common.schema.model.impl,
  eu.esdihumboldt.hale.io.gml.writer.internal,
+ eu.esdihumboldt.hale.io.xsd.constraint,
+ eu.esdihumboldt.hale.io.xsd.model,
+ eu.esdihumboldt.hale.io.xsd.reader,
+ eu.esdihumboldt.hale.ui.common,
  eu.esdihumboldt.hale.ui.util.io,
+ eu.esdihumboldt.hale.ui.util.swing,
  eu.esdihumboldt.hale.ui.util.viewer,
  eu.esdihumboldt.hale.ui.util.wizard,
  org.apache.http;version="4.2.5",
  org.apache.http.client.utils;version="4.2.6",
  org.slf4j;version="1.7.2"
-Export-Package: eu.esdihumboldt.hale.io.gml.ui.wfs
+Export-Package: eu.esdihumboldt.hale.io.wfs.ui,
+ eu.esdihumboldt.hale.io.wfs.ui.capabilities,
+ eu.esdihumboldt.hale.io.wfs.ui.config,
+ eu.esdihumboldt.hale.io.wfs.ui.describefeature,
+ eu.esdihumboldt.hale.io.wfs.ui.getfeature,
+ eu.esdihumboldt.hale.io.wfs.ui.getfeature.internal;x-internal:=true,
+ eu.esdihumboldt.hale.io.wfs.ui.internal;x-internal:=true,
+ eu.esdihumboldt.hale.io.wfs.ui.types
 Bundle-ActivationPolicy: lazy
 Bundle-Activator: eu.esdihumboldt.hale.io.wfs.ui.internal.WFSUIPlugin
