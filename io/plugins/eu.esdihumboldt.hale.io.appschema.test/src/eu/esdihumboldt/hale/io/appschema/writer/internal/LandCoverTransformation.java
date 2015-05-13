@@ -15,11 +15,32 @@
 
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
+import java.net.URI;
+
+import eu.esdihumboldt.cst.test.TransformationExampleImpl;
 
 /**
  * TODO Type description
+ * 
  * @author stefano
  */
-public class LandCoverTransformation {
+public class LandCoverTransformation extends TransformationExampleImpl {
+
+	/**
+	 * @param sourceSchemaLocation
+	 * @param targetSchemaLocation
+	 * @param alignmentLocation
+	 * @param sourceDataLocation
+	 * @param targetDataLocation
+	 * @param targetContainerNamespace
+	 * @param targetContainerName
+	 */
+	public LandCoverTransformation(URI sourceSchemaLocation, URI targetSchemaLocation,
+			URI alignmentLocation, URI sourceDataLocation, URI targetDataLocation,
+			String targetContainerNamespace, String targetContainerName) {
+		super(sourceSchemaLocation, targetSchemaLocation, alignmentLocation, sourceDataLocation,
+				targetDataLocation, targetContainerNamespace, targetContainerName);
+		// TODO Auto-generated constructor stub
+	}
 
 }

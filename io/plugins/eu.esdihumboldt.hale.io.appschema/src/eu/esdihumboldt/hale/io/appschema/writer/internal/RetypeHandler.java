@@ -11,7 +11,7 @@ import eu.esdihumboldt.hale.common.align.model.Entity;
 public class RetypeHandler implements TypeTransformationHandler {
 
 	@Override
-	public void handleTypeTransformation(Cell typeCell,
+	public FeatureTypeMapping handleTypeTransformation(Cell typeCell,
 			AppSchemaDataAccessType appSchemaConfiguration) {
 
 		// TODO: I have no idea what the keys mean in these
@@ -37,6 +37,7 @@ public class RetypeHandler implements TypeTransformationHandler {
 
 		appSchemaConfiguration.getTypeMappings().getFeatureTypeMapping().add(featureTypeMapping);
 
+		return featureTypeMapping;
 	}
 
 }

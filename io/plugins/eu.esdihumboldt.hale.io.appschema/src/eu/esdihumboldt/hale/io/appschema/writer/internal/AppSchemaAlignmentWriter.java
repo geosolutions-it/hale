@@ -1,10 +1,11 @@
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.MessageFormat;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map.Entry;
 
 import javax.xml.bind.JAXBContext;
@@ -16,8 +17,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.geotools.app_schema.AppSchemaDataAccessType;
 import org.geotools.app_schema.ObjectFactory;
-import org.geotools.app_schema.TargetTypesPropertyType;
-import org.geotools.app_schema.TargetTypesPropertyType.FeatureType;
+import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 
 import com.google.common.collect.ListMultimap;
 
@@ -33,6 +33,7 @@ import eu.esdihumboldt.hale.common.core.io.report.IOReport;
 import eu.esdihumboldt.hale.common.core.io.report.IOReporter;
 import eu.esdihumboldt.hale.common.core.io.report.impl.IOMessageImpl;
 import eu.esdihumboldt.hale.common.schema.model.Schema;
+import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 
 public class AppSchemaAlignmentWriter extends AbstractAlignmentWriter {
 
@@ -52,19 +53,27 @@ public class AppSchemaAlignmentWriter extends AbstractAlignmentWriter {
 
 		try {
 			AppSchemaDataAccessType mappingTemplate = loadMappingTemplate();
+			AppSchemaMappingContext context = new AppSchemaMappingContext(mappingTemplate);
 
-			// populate targetTypes element
-			Iterable<? extends Schema> targetSchemas = getTargetSchema().getSchemas();
-			if (targetSchemas != null) {
-				TargetTypesPropertyType targetTypes = mappingTemplate.getTargetTypes();
-				FeatureType featureType = targetTypes.getFeatureType();
-				if (featureType == null) {
-					featureType = new FeatureType();
-					targetTypes.setFeatureType(featureType);
+			Collection<? extends TypeDefinition> targetSchemaTypes = getTargetSchema().getTypes();
+			// populate namespaces element
+			if (targetSchemaTypes != null) {
+				// TODO: this removes all namespaces that were defined in the
+				// template file, remove it in production
+				mappingTemplate.getNamespaces().getNamespace().clear();
+				for (TypeDefinition typeDef : targetSchemaTypes) {
+					String namespaceURI = typeDef.getName().getNamespaceURI();
+					String prefix = typeDef.getName().getPrefix();
+
+					context.getOrCreateNamespace(namespaceURI, prefix);
 				}
-				List<String> schemaUris = featureType.getSchemaUri();
+			}
+
+			Iterable<? extends Schema> targetSchemas = getTargetSchema().getSchemas();
+			// populate targetTypes element
+			if (targetSchemas != null) {
 				for (Schema targetSchema : targetSchemas) {
-					schemaUris.add(targetSchema.getLocation().toString());
+					context.addSchemaURI(targetSchema.getLocation().toString());
 				}
 			}
 
@@ -72,14 +81,58 @@ public class AppSchemaAlignmentWriter extends AbstractAlignmentWriter {
 			Collection<? extends Cell> typeCells = getAlignment().getTypeCells();
 			for (Cell typeCell : typeCells) {
 				String typeTransformId = typeCell.getTransformationIdentifier();
+				TypeTransformationHandler typeTransformHandler = null;
 
-				TypeTransformationHandler typeTransformHandler = TypeTransformationHandlerFactory
-						.getInstance().createTypeTransformationHandler(typeTransformId);
-				typeTransformHandler.handleTypeTransformation(typeCell, mappingTemplate);
+				try {
+					typeTransformHandler = TypeTransformationHandlerFactory.getInstance()
+							.createTypeTransformationHandler(typeTransformId);
+					FeatureTypeMapping ftMapping = typeTransformHandler.handleTypeTransformation(
+							typeCell, mappingTemplate);
+
+					if (ftMapping != null) {
+						Collection<? extends Cell> propertyCells = getAlignment().getPropertyCells(
+								typeCell);
+						for (Cell propertyCell : propertyCells) {
+							String propertyTransformId = propertyCell.getTransformationIdentifier();
+							PropertyTransformationHandler propertyTransformHandler = null;
+
+							try {
+								propertyTransformHandler = PropertyTransformationHandlerFactory
+										.getInstance().createPropertyTransformationHandler(
+												propertyTransformId);
+								propertyTransformHandler.handlePropertyTransformation(propertyCell,
+										ftMapping, mappingTemplate);
+							} catch (UnsupportedTransformationException e) {
+								String errMsg = MessageFormat.format(
+										"Error processing property cell{0}", propertyCell.getId());
+								reporter.warn(new IOMessageImpl(errMsg, e));
+							}
+						}
+					}
+				} catch (UnsupportedTransformationException e) {
+					String errMsg = MessageFormat.format("Error processing type cell{0}",
+							typeCell.getId());
+					reporter.warn(new IOMessageImpl(errMsg, e));
+				}
 
 			}
 
-			writeMappingConf(mappingTemplate, System.out);
+			if (log.isDebugEnabled()) {
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				try {
+					writeMappingConf(mappingTemplate, bos);
+
+					log.debug("app-schema configuration: " + bos.toString("UTF-8"));
+				} finally {
+					bos.close();
+				}
+			}
+
+			if (getTarget() != null) {
+				OutputStream out = getTarget().getOutput();
+				writeMappingConf(mappingTemplate, out);
+				out.flush();
+			}
 		} catch (Exception e) {
 			reporter.error(new IOMessageImpl(e.getMessage(), e));
 			reporter.setSuccess(false);
