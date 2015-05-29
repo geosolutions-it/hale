@@ -15,8 +15,8 @@
 
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
-import static eu.esdihumboldt.hale.common.align.model.functions.RenameFunction.PARAMETER_IGNORE_NAMESPACES;
-import static eu.esdihumboldt.hale.common.align.model.functions.RenameFunction.PARAMETER_STRUCTURAL_RENAME;
+import static eu.esdihumboldt.hale.common.align.model.functions.AssignFunction.ENTITY_ANCHOR;
+import static eu.esdihumboldt.hale.common.align.model.functions.AssignFunction.PARAMETER_VALUE;
 
 import java.util.List;
 
@@ -28,15 +28,16 @@ import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping.Attri
 import com.google.common.collect.ListMultimap;
 
 import eu.esdihumboldt.hale.common.align.model.Cell;
+import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.align.model.ParameterValue;
 import eu.esdihumboldt.hale.common.align.model.Property;
 
 /**
  * TODO Type description
  * 
- * @author Stefano Costa, GeoSolutions
+ * @author stefano
  */
-public class RenameHandler extends AbstractPropertyTransformationHandler {
+public class AssignHandler extends AbstractPropertyTransformationHandler {
 
 	@Override
 	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
@@ -46,21 +47,32 @@ public class RenameHandler extends AbstractPropertyTransformationHandler {
 
 		ListMultimap<String, ParameterValue> parameters = propertyCell
 				.getTransformationParameters();
-		// TODO: how should I handle these parameters?
-		List<ParameterValue> structRenParams = parameters.get(PARAMETER_STRUCTURAL_RENAME);
-		List<ParameterValue> ignNamespParams = parameters.get(PARAMETER_IGNORE_NAMESPACES);
+		List<ParameterValue> valueParams = parameters.get(PARAMETER_VALUE);
+		String value = valueParams.get(0).getStringRepresentation();
 
-		Property source = AppSchemaMappingUtils.getSourceProperty(propertyCell);
+		ListMultimap<String, ? extends Entity> sourceEntities = propertyCell.getSource();
+		Property anchor = null;
+		if (sourceEntities != null && sourceEntities.containsKey(ENTITY_ANCHOR)) {
+			anchor = (Property) sourceEntities.get(ENTITY_ANCHOR).get(0);
+		}
 
 		Property target = AppSchemaMappingUtils.getTargetProperty(propertyCell);
 
-		// TODO: generalize this code
 		// set source attribute
 		AttributeExpressionMappingType sourceExpression = new AttributeExpressionMappingType();
-		sourceExpression.setOCQL(source.getDefinition().getDefinition().getName().getLocalPart());
+		String ocql = null;
+		if (anchor != null) {
+			// TODO: generalize this code
+			String anchorAttr = anchor.getDefinition().getDefinition().getName().getLocalPart();
+			ocql = "if_then_else(isNull(" + anchorAttr + "), Expression.NIL, '" + value + "')";
+		}
+		else {
+			ocql = "'" + value + "'";
+		}
+		sourceExpression.setOCQL(ocql);
 		// TODO: what about idExpression?
 		attributeMapping.setSourceExpression(sourceExpression);
-		// TODO: generalize this code
+
 		// set target attribute
 		String targetAttribute = context.buildAttributeXPath(target.getDefinition());
 		attributeMapping.setTargetAttribute(targetAttribute);
@@ -73,6 +85,7 @@ public class RenameHandler extends AbstractPropertyTransformationHandler {
 		attrMappings.getAttributeMapping().add(attributeMapping);
 
 		return attributeMapping;
+
 	}
 
 }

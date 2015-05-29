@@ -1,0 +1,159 @@
+/*
+ * Copyright (c) 2015 Data Harmonisation Panel
+ * 
+ * All rights reserved. This program and the accompanying materials are made
+ * available under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
+ * 
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this distribution. If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * Contributors:
+ *     Data Harmonisation Panel <http://www.dhpanel.eu>
+ */
+
+package eu.esdihumboldt.hale.io.appschema.writer.internal;
+
+import static eu.esdihumboldt.hale.common.align.model.functions.JoinFunction.PARAMETER_JOIN;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findOwningFeatureType;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findOwningFeatureTypePath;
+
+import java.util.Collection;
+import java.util.List;
+
+import org.geotools.app_schema.AttributeExpressionMappingType;
+import org.geotools.app_schema.AttributeMappingType;
+import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
+
+import eu.esdihumboldt.hale.common.align.model.Cell;
+import eu.esdihumboldt.hale.common.align.model.ChildContext;
+import eu.esdihumboldt.hale.common.align.model.Entity;
+import eu.esdihumboldt.hale.common.align.model.Property;
+import eu.esdihumboldt.hale.common.align.model.functions.join.JoinParameter;
+import eu.esdihumboldt.hale.common.align.model.functions.join.JoinParameter.JoinCondition;
+import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
+import eu.esdihumboldt.hale.common.align.model.impl.TypeEntityDefinition;
+import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
+import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
+
+/**
+ * TODO Type description
+ * 
+ * @author stefano
+ */
+public class JoinHandler implements TypeTransformationHandler {
+
+	/**
+	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandler#handleTypeTransformation(eu.esdihumboldt.hale.common.align.model.Cell,
+	 *      eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingContext)
+	 */
+	@Override
+	public FeatureTypeMapping handleTypeTransformation(Cell typeCell,
+			AppSchemaMappingContext context) {
+
+		JoinParameter joinParameter = typeCell.getTransformationParameters().get(PARAMETER_JOIN)
+				.get(0).as(JoinParameter.class);
+
+		String validation = joinParameter.validate();
+		if (validation != null)
+			throw new IllegalArgumentException("Join parameter invalid: " + validation);
+
+		if (joinParameter.types.size() > 2) {
+			throw new IllegalArgumentException("Only join between 2 types is supported so far");
+		}
+
+		if (joinParameter.conditions.size() > 1) {
+			throw new IllegalArgumentException("Only single condition joins are supported so far");
+		}
+
+		// TODO: I assume the first type is the container type, whereas the
+		// second type is contained in the first
+		TypeEntityDefinition containerType = joinParameter.types.get(0);
+		TypeEntityDefinition containedType = joinParameter.types.get(1);
+		JoinCondition joinCondition = joinParameter.conditions.iterator().next();
+		PropertyEntityDefinition baseProperty = joinCondition.baseProperty;
+		PropertyEntityDefinition joinProperty = joinCondition.joinProperty;
+
+		// build FeatureTypeMapping for container type
+		Entity containerTypeTarget = typeCell.getTarget().values().iterator().next();
+		TypeDefinition containerTypeTargetType = containerTypeTarget.getDefinition().getType();
+
+		FeatureTypeMapping containerFTMapping = context
+				.getOrCreateFeatureTypeMapping(containerTypeTargetType);
+		// TODO: how do I know the datasource from which data will be read?
+		containerFTMapping.setSourceDataStore("datastore");
+		containerFTMapping.setSourceType(containerType.getDefinition().getName().getLocalPart());
+
+		// build FeatureTypeMapping for contained type
+		FeatureTypeMapping containedFTMapping = null;
+		List<ChildContext> containedFTPath = null;
+		Collection<? extends Cell> propertyCells = context.getAlignment()
+				.getPropertyCells(typeCell);
+		for (Cell propertyCell : propertyCells) {
+			Property sourceProperty = AppSchemaMappingUtils.getSourceProperty(propertyCell);
+			if (sourceProperty != null) {
+				TypeDefinition sourceType = sourceProperty.getDefinition().getDefinition()
+						.getParentType();
+				if (sourceType.getName().equals(containedType.getDefinition().getName())) {
+					// source property belongs to contained type: determine
+					// target type
+					Property targetProperty = AppSchemaMappingUtils.getTargetProperty(propertyCell);
+					TypeDefinition targetFT = findOwningFeatureType(targetProperty.getDefinition());
+					if (targetFT != null
+							&& !targetFT.getName().equals(containerTypeTargetType.getName())) {
+						// target property belongs to a feature type different
+						// from the already mapped one: build a new mapping
+						containedFTPath = findOwningFeatureTypePath(targetProperty.getDefinition());
+
+						containedFTMapping = context.getOrCreateFeatureTypeMapping(targetFT);
+						// TODO: how do I know the datasource from which data
+						// will be read?
+						containedFTMapping.setSourceDataStore("datastore");
+						containedFTMapping.setSourceType(containedType.getDefinition().getName()
+								.getLocalPart());
+
+						// TODO: I assume at most 2 FeatureTypes are involved
+						break;
+					}
+				}
+			}
+		}
+
+		// build join mapping
+		if (containedFTMapping != null && containedFTPath != null) {
+			AttributeMappingType containerJoinMapping = new AttributeMappingType();
+			containerJoinMapping.setTargetAttribute(context.buildAttributeXPath(containedFTPath));
+			// set isMultiple attribute
+			PropertyDefinition targetPropertyDef = containedFTPath.get(containedFTPath.size() - 1)
+					.getChild().asProperty();
+			AppSchemaMappingUtils.setIsMultiple(targetPropertyDef, containerJoinMapping);
+
+			AttributeExpressionMappingType containerSourceExpr = new AttributeExpressionMappingType();
+			// join column extracted from join condition
+			containerSourceExpr.setOCQL(baseProperty.getDefinition().getName().getLocalPart());
+			containerSourceExpr.setLinkElement(containedFTMapping.getTargetElement());
+			// TODO: support multiple joins (e.g. FEATURE_LINK[1],
+			// FEATURE_LINK[2],
+			// ...)
+			containerSourceExpr.setLinkField(AppSchemaMappingContext.FEATURE_LINK_FIELD);
+			containerJoinMapping.setSourceExpression(containerSourceExpr);
+			containerFTMapping.getAttributeMappings().getAttributeMapping()
+					.add(containerJoinMapping);
+
+			AttributeMappingType containedJoinMapping = new AttributeMappingType();
+			AttributeExpressionMappingType containedSourceExpr = new AttributeExpressionMappingType();
+			// join column extracted from join condition
+			containedSourceExpr.setOCQL(joinProperty.getDefinition().getName().getLocalPart());
+			containedJoinMapping.setSourceExpression(containedSourceExpr);
+			// TODO: support multiple joins (e.g. FEATURE_LINK[1],
+			// FEATURE_LINK[2],
+			// ...)
+			containedJoinMapping.setTargetAttribute(AppSchemaMappingContext.FEATURE_LINK_FIELD);
+			containedFTMapping.getAttributeMappings().getAttributeMapping()
+					.add(containedJoinMapping);
+		}
+
+		return containerFTMapping;
+	}
+}

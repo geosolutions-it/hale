@@ -15,52 +15,40 @@
 
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
-import static eu.esdihumboldt.hale.common.align.model.functions.RenameFunction.PARAMETER_IGNORE_NAMESPACES;
-import static eu.esdihumboldt.hale.common.align.model.functions.RenameFunction.PARAMETER_STRUCTURAL_RENAME;
-
-import java.util.List;
+import static eu.esdihumboldt.cst.functions.numeric.MathematicalExpressionFunction.PARAMETER_EXPRESSION;
 
 import org.geotools.app_schema.AttributeExpressionMappingType;
 import org.geotools.app_schema.AttributeMappingType;
 import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping.AttributeMappings;
 
-import com.google.common.collect.ListMultimap;
-
 import eu.esdihumboldt.hale.common.align.model.Cell;
-import eu.esdihumboldt.hale.common.align.model.ParameterValue;
 import eu.esdihumboldt.hale.common.align.model.Property;
 
 /**
  * TODO Type description
  * 
- * @author Stefano Costa, GeoSolutions
+ * @author stefano
  */
-public class RenameHandler extends AbstractPropertyTransformationHandler {
+public class MathematicalExpressionHandler extends AbstractPropertyTransformationHandler {
 
 	@Override
 	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
 			FeatureTypeMapping featureTypeMapping, AppSchemaMappingContext context) {
-
 		AttributeMappingType attributeMapping = new AttributeMappingType();
 
-		ListMultimap<String, ParameterValue> parameters = propertyCell
-				.getTransformationParameters();
-		// TODO: how should I handle these parameters?
-		List<ParameterValue> structRenParams = parameters.get(PARAMETER_STRUCTURAL_RENAME);
-		List<ParameterValue> ignNamespParams = parameters.get(PARAMETER_IGNORE_NAMESPACES);
-
-		Property source = AppSchemaMappingUtils.getSourceProperty(propertyCell);
+		String mathExpression = propertyCell.getTransformationParameters()
+				.get(PARAMETER_EXPRESSION).get(0).getStringRepresentation();
 
 		Property target = AppSchemaMappingUtils.getTargetProperty(propertyCell);
 
-		// TODO: generalize this code
 		// set source attribute
 		AttributeExpressionMappingType sourceExpression = new AttributeExpressionMappingType();
-		sourceExpression.setOCQL(source.getDefinition().getDefinition().getName().getLocalPart());
+		// TODO: verify that math expressions work as-is in CQL
+		sourceExpression.setOCQL(mathExpression);
 		// TODO: what about idExpression?
 		attributeMapping.setSourceExpression(sourceExpression);
-		// TODO: generalize this code
+
 		// set target attribute
 		String targetAttribute = context.buildAttributeXPath(target.getDefinition());
 		attributeMapping.setTargetAttribute(targetAttribute);

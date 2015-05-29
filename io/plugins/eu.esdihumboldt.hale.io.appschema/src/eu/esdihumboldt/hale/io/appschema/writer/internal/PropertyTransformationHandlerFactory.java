@@ -15,6 +15,10 @@
 
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
+import eu.esdihumboldt.cst.functions.numeric.MathematicalExpressionFunction;
+import eu.esdihumboldt.cst.functions.string.DateExtractionFunction;
+import eu.esdihumboldt.hale.common.align.model.functions.AssignFunction;
+import eu.esdihumboldt.hale.common.align.model.functions.FormattedStringFunction;
 import eu.esdihumboldt.hale.common.align.model.functions.RenameFunction;
 
 /**
@@ -47,6 +51,19 @@ public class PropertyTransformationHandlerFactory {
 
 		if (propertyTransformationIdentifier.equals(RenameFunction.ID)) {
 			return new RenameHandler();
+		}
+		else if (propertyTransformationIdentifier.equals(AssignFunction.ID)
+				|| propertyTransformationIdentifier.equals(AssignFunction.ID_BOUND)) {
+			return new AssignHandler();
+		}
+		else if (propertyTransformationIdentifier.equals(FormattedStringFunction.ID)) {
+			return new FormattedStringHandler();
+		}
+		else if (propertyTransformationIdentifier.equals(MathematicalExpressionFunction.ID)) {
+			return new MathematicalExpressionHandler();
+		}
+		else if (propertyTransformationIdentifier.equals(DateExtractionFunction.ID)) {
+			return new DateExtractionHandler();
 		}
 		else {
 			String errMsg = String.format("Unsupported property transformation %s",

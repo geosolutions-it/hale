@@ -1,5 +1,6 @@
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
+import eu.esdihumboldt.hale.common.align.model.functions.JoinFunction;
 import eu.esdihumboldt.hale.common.align.model.functions.RetypeFunction;
 
 public class TypeTransformationHandlerFactory {
@@ -26,6 +27,9 @@ public class TypeTransformationHandlerFactory {
 
 		if (typeTransformationIdentifier.equals(RetypeFunction.ID)) {
 			return new RetypeHandler();
+		}
+		else if (typeTransformationIdentifier.equals(JoinFunction.ID)) {
+			return new JoinHandler();
 		}
 		else {
 			String errMsg = String.format("Unsupported type transformation %s",

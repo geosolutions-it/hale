@@ -1,18 +1,18 @@
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
-import org.geotools.app_schema.AppSchemaDataAccessType;
 import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 
 import com.google.common.collect.ListMultimap;
 
 import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.Entity;
+import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 
 public class RetypeHandler implements TypeTransformationHandler {
 
 	@Override
 	public FeatureTypeMapping handleTypeTransformation(Cell typeCell,
-			AppSchemaDataAccessType appSchemaConfiguration) {
+			AppSchemaMappingContext context) {
 
 		// TODO: I have no idea what the keys mean in these
 		// ListMultimaps...
@@ -24,20 +24,14 @@ public class RetypeHandler implements TypeTransformationHandler {
 
 		Entity sourceType = typeSourceEntities.values().iterator().next();
 		Entity targetType = typeTargetEntities.values().iterator().next();
+		TypeDefinition targetTypeDef = targetType.getDefinition().getType();
 
-		FeatureTypeMapping featureTypeMapping = new FeatureTypeMapping();
+		FeatureTypeMapping ftMapping = context.getOrCreateFeatureTypeMapping(targetTypeDef);
 		// TODO: how do I know the datasource from which data will be read?
-		featureTypeMapping.setSourceDataStore("datastore");
+		ftMapping.setSourceDataStore("datastore");
+		ftMapping.setSourceType(sourceType.getDefinition().getType().getName().getLocalPart());
 
-		featureTypeMapping.setSourceType(sourceType.getDefinition().getType().getName()
-				.getLocalPart());
-		featureTypeMapping.setTargetElement(targetType.getDefinition().getType().getName()
-				.getPrefix()
-				+ ":" + targetType.getDefinition().getType().getName().getLocalPart());
-
-		appSchemaConfiguration.getTypeMappings().getFeatureTypeMapping().add(featureTypeMapping);
-
-		return featureTypeMapping;
+		return ftMapping;
 	}
 
 }
