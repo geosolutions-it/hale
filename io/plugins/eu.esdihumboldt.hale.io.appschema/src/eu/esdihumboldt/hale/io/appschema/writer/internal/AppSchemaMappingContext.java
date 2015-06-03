@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.geotools.app_schema.AppSchemaDataAccessType;
+import org.geotools.app_schema.AttributeMappingType;
 import org.geotools.app_schema.IncludesPropertyType;
 import org.geotools.app_schema.NamespacesPropertyType;
 import org.geotools.app_schema.NamespacesPropertyType.Namespace;
@@ -55,6 +56,7 @@ public class AppSchemaMappingContext {
 	private final Map<String, Namespace> namespaceUriMap;
 	private final Map<String, Namespace> namespacePrefixMap;
 	private final Map<Integer, FeatureTypeMapping> featureTypeMappings;
+	private final Map<Integer, AttributeMappingType> attributeMappings;
 
 	private final Alignment alignment;
 	private final AppSchemaDataAccessType appSchemaMapping;
@@ -69,6 +71,7 @@ public class AppSchemaMappingContext {
 		this.namespaceUriMap = new HashMap<String, Namespace>();
 		this.namespacePrefixMap = new HashMap<String, Namespace>();
 		this.featureTypeMappings = new HashMap<Integer, FeatureTypeMapping>();
+		this.attributeMappings = new HashMap<Integer, AttributeMappingType>();
 
 		if (this.appSchemaMapping.getNamespaces() == null) {
 			this.appSchemaMapping.setNamespaces(new NamespacesPropertyType());
@@ -217,12 +220,53 @@ public class AppSchemaMappingContext {
 	}
 
 	private Integer getFeatureTypeMappingHashKey(TypeDefinition targetType, String mappingName) {
-		int hashKey = targetType.getName().hashCode();
-		if (mappingName != null) {
-			hashKey &= mappingName.hashCode();
+		String hashBase = targetType.getName().toString();
+		if (mappingName != null && !mappingName.isEmpty()) {
+			hashBase += "__" + mappingName;
 		}
 
-		return hashKey;
+		return hashBase.hashCode();
+	}
+
+	public AttributeMappingType getOrCreateAttributeMapping(List<ChildContext> propertyPath) {
+		if (propertyPath == null || propertyPath.isEmpty()) {
+			return null;
+		}
+
+		Integer hashKey = getAttruteMappingHashKey(propertyPath);
+		if (!attributeMappings.containsKey(hashKey)) {
+			// create
+			AttributeMappingType attrMapping = new AttributeMappingType();
+			// add to owning feature type mapping
+			TypeDefinition featureTypeDef = findOwningFeatureType(propertyPath);
+			FeatureTypeMapping ftMapping = getOrCreateFeatureTypeMapping(featureTypeDef);
+			ftMapping.getAttributeMappings().getAttributeMapping().add(attrMapping);
+			// put into internal map
+			attributeMappings.put(hashKey, attrMapping);
+		}
+		return attributeMappings.get(hashKey);
+	}
+
+	private Integer getAttruteMappingHashKey(List<ChildContext> propertyPath) {
+		final String SEPARATOR = "__";
+		StringBuilder pathBuilder = new StringBuilder();
+
+		TypeDefinition featureType = findOwningFeatureType(propertyPath);
+		if (featureType != null) {
+			pathBuilder.append(featureType.getName().toString()).append(SEPARATOR);
+			for (ChildContext childContext : propertyPath) {
+				pathBuilder.append(childContext.getChild().getName().toString());
+				if (childContext.getContextName() != null) {
+					pathBuilder.append(childContext.getContextName());
+				}
+				pathBuilder.append(SEPARATOR);
+			}
+		}
+		else {
+			throw new IllegalArgumentException("Could not find feature type owning property");
+		}
+
+		return pathBuilder.toString().hashCode();
 	}
 
 	/**

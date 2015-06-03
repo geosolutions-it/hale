@@ -16,8 +16,11 @@
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
 import static eu.esdihumboldt.hale.common.align.model.functions.JoinFunction.PARAMETER_JOIN;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findChildFeatureType;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findOwningFeatureType;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findOwningFeatureTypePath;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.getTargetProperty;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.isXRefAttribute;
 
 import java.util.Collection;
 import java.util.List;
@@ -43,6 +46,9 @@ import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
  * @author stefano
  */
 public class JoinHandler implements TypeTransformationHandler {
+
+	private PropertyEntityDefinition baseProperty;
+	private PropertyEntityDefinition joinProperty;
 
 	/**
 	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandler#handleTypeTransformation(eu.esdihumboldt.hale.common.align.model.Cell,
@@ -72,8 +78,8 @@ public class JoinHandler implements TypeTransformationHandler {
 		TypeEntityDefinition containerType = joinParameter.types.get(0);
 		TypeEntityDefinition containedType = joinParameter.types.get(1);
 		JoinCondition joinCondition = joinParameter.conditions.iterator().next();
-		PropertyEntityDefinition baseProperty = joinCondition.baseProperty;
-		PropertyEntityDefinition joinProperty = joinCondition.joinProperty;
+		baseProperty = joinCondition.baseProperty;
+		joinProperty = joinCondition.joinProperty;
 
 		// build FeatureTypeMapping for container type
 		Entity containerTypeTarget = typeCell.getTarget().values().iterator().next();
@@ -98,7 +104,7 @@ public class JoinHandler implements TypeTransformationHandler {
 				if (sourceType.getName().equals(containedType.getDefinition().getName())) {
 					// source property belongs to contained type: determine
 					// target type
-					Property targetProperty = AppSchemaMappingUtils.getTargetProperty(propertyCell);
+					Property targetProperty = getTargetProperty(propertyCell);
 					TypeDefinition targetFT = findOwningFeatureType(targetProperty.getDefinition());
 					if (targetFT != null
 							&& !targetFT.getName().equals(containerTypeTargetType.getName())) {
@@ -113,8 +119,29 @@ public class JoinHandler implements TypeTransformationHandler {
 						containedFTMapping.setSourceType(containedType.getDefinition().getName()
 								.getLocalPart());
 
-						// TODO: I assume at most 2 FeatureTypes are involved
+						// TODO: I assume at most 2 FeatureTypes are involved in
+						// the join
 						break;
+					}
+					else if (isXRefAttribute(targetProperty.getDefinition().getDefinition())) {
+						// check if target property is a xref attribute
+						Property xrefProperty = targetProperty;
+						List<ChildContext> xrefPropertyPath = xrefProperty.getDefinition()
+								.getPropertyPath();
+						List<ChildContext> xrefContainerPath = xrefPropertyPath.subList(0,
+								xrefPropertyPath.size() - 1);
+						TypeDefinition xrefParentType = xrefProperty.getDefinition()
+								.getDefinition().getParentType();
+						TypeDefinition childFT = findChildFeatureType(xrefParentType);
+
+						if (childFT != null) {
+							containedFTPath = xrefContainerPath;
+							containedFTMapping = context.getOrCreateFeatureTypeMapping(childFT);
+
+							// TODO: I assume at most 2 FeatureTypes are
+							// involved in the join
+							break;
+						}
 					}
 				}
 			}
@@ -122,12 +149,15 @@ public class JoinHandler implements TypeTransformationHandler {
 
 		// build join mapping
 		if (containedFTMapping != null && containedFTPath != null) {
-			AttributeMappingType containerJoinMapping = new AttributeMappingType();
+			AttributeMappingType containerJoinMapping = context
+					.getOrCreateAttributeMapping(containedFTPath);
 			containerJoinMapping.setTargetAttribute(context.buildAttributeXPath(containedFTPath));
 			// set isMultiple attribute
 			PropertyDefinition targetPropertyDef = containedFTPath.get(containedFTPath.size() - 1)
 					.getChild().asProperty();
-			AppSchemaMappingUtils.setIsMultiple(targetPropertyDef, containerJoinMapping);
+			if (AppSchemaMappingUtils.isMultiple(targetPropertyDef)) {
+				containerJoinMapping.setIsMultiple(true);
+			}
 
 			AttributeExpressionMappingType containerSourceExpr = new AttributeExpressionMappingType();
 			// join column extracted from join condition
@@ -138,8 +168,6 @@ public class JoinHandler implements TypeTransformationHandler {
 			// ...)
 			containerSourceExpr.setLinkField(AppSchemaMappingContext.FEATURE_LINK_FIELD);
 			containerJoinMapping.setSourceExpression(containerSourceExpr);
-			containerFTMapping.getAttributeMappings().getAttributeMapping()
-					.add(containerJoinMapping);
 
 			AttributeMappingType containedJoinMapping = new AttributeMappingType();
 			AttributeExpressionMappingType containedSourceExpr = new AttributeExpressionMappingType();
@@ -156,4 +184,5 @@ public class JoinHandler implements TypeTransformationHandler {
 
 		return containerFTMapping;
 	}
+
 }

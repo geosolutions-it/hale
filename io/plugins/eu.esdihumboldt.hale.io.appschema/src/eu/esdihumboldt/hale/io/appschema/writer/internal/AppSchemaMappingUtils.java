@@ -15,12 +15,11 @@
 
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import javax.xml.namespace.QName;
-
-import org.geotools.app_schema.AttributeMappingType;
 
 import com.google.common.collect.ListMultimap;
 
@@ -29,9 +28,11 @@ import eu.esdihumboldt.hale.common.align.model.ChildContext;
 import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.align.model.Property;
 import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
+import eu.esdihumboldt.hale.common.schema.model.ChildDefinition;
 import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 import eu.esdihumboldt.hale.common.schema.model.constraint.property.Cardinality;
+import eu.esdihumboldt.hale.io.xsd.constraint.XmlAttributeFlag;
 
 /**
  * TODO Type description
@@ -42,18 +43,32 @@ public class AppSchemaMappingUtils {
 
 	public static final QName QNAME_ABSTRACT_FEATURE_TYPE = new QName(
 			"http://www.opengis.net/gml/3.2", "AbstractFeatureType");
+	public static final QName QNAME_ABSTRACT_GEOMETRY_TYPE = new QName(
+			"http://www.opengis.net/gml/3.2", "AbstractGeometryType");
+	public static final QName QNAME_XLINK_XREF = new QName("http://www.w3.org/1999/xlink", "href");
 
-	public static void setIsMultiple(PropertyDefinition targetPropertyDef,
-			AttributeMappingType attrMapping) {
-		if (targetPropertyDef != null && attrMapping != null) {
+	public static boolean isXmlAttribute(PropertyDefinition propertyDef) {
+		XmlAttributeFlag xmlAttrFlag = propertyDef.getConstraint(XmlAttributeFlag.class);
+
+		return xmlAttrFlag != null && xmlAttrFlag.isEnabled();
+	}
+
+	public static boolean isMultiple(PropertyDefinition targetPropertyDef) {
+		if (targetPropertyDef != null) {
 			Cardinality cardinality = targetPropertyDef.getConstraint(Cardinality.class);
 			if (cardinality != null) {
 				long maxOccurs = cardinality.getMaxOccurs();
 				if (maxOccurs > 1 || maxOccurs == Cardinality.UNBOUNDED) {
-					attrMapping.setIsMultiple(true);
+					return true;
 				}
 			}
 		}
+
+		return false;
+	}
+
+	public static boolean isXRefAttribute(PropertyDefinition propertyDef) {
+		return propertyDef != null && propertyDef.getName().equals(QNAME_XLINK_XREF);
 	}
 
 	public static TypeDefinition findOwningFeatureType(PropertyEntityDefinition propertyEntityDef) {
@@ -84,13 +99,14 @@ public class AppSchemaMappingUtils {
 		int ftIdx = findOwningFeatureTypeIndex(propertyPath);
 
 		if (ftIdx >= 0) {
-			int lastIdx = ftIdx - 1;
-			// make sure last element is a property and not a group (i.e. a
-			// choice element)
-			while (lastIdx > 0 && propertyPath.get(lastIdx).getChild().asProperty() == null) {
-				lastIdx--;
-			}
-			return propertyPath.subList(0, lastIdx);
+//			int lastIdx = ftIdx - 1;
+//			// make sure last element is a property and not a group (i.e. a
+//			// choice element)
+//			while (lastIdx > 0 && propertyPath.get(lastIdx).getChild().asProperty() == null) {
+//				lastIdx--;
+//			}
+//			return propertyPath.subList(0, lastIdx);
+			return getContainerPropertyPath(propertyPath.subList(0, ftIdx));
 		}
 
 		return Collections.emptyList();
@@ -111,6 +127,25 @@ public class AppSchemaMappingUtils {
 		return -1;
 	}
 
+	public static TypeDefinition findChildFeatureType(TypeDefinition typeDef) {
+		if (typeDef != null) {
+			Collection<? extends ChildDefinition<?>> children = typeDef.getChildren();
+			if (children != null) {
+				for (ChildDefinition<?> child : children) {
+					PropertyDefinition childPropertyDef = child.asProperty();
+					if (childPropertyDef != null) {
+						TypeDefinition childPropertyType = childPropertyDef.getPropertyType();
+						if (isFeatureType(childPropertyType)) {
+							return childPropertyType;
+						}
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+
 	public static boolean isFeatureType(TypeDefinition typeDefinition) {
 		if (typeDefinition == null) {
 			return false;
@@ -122,6 +157,33 @@ public class AppSchemaMappingUtils {
 		else {
 			return isFeatureType(typeDefinition.getSuperType());
 		}
+	}
+
+	public static boolean isGeometryType(TypeDefinition typeDefinition) {
+		if (typeDefinition == null) {
+			return false;
+		}
+
+		if (typeDefinition.getName().equals(QNAME_ABSTRACT_GEOMETRY_TYPE)) {
+			return true;
+		}
+		else {
+			return isGeometryType(typeDefinition.getSuperType());
+		}
+	}
+
+	public static List<ChildContext> getContainerPropertyPath(List<ChildContext> propertyPath) {
+		if (propertyPath == null || propertyPath.size() == 0) {
+			return Collections.emptyList();
+		}
+
+		int lastIdx = propertyPath.size() - 1;
+		// make sure last element is a property and not a group (e.g. a choice
+		// element)
+		while (lastIdx > 0 && propertyPath.get(lastIdx).getChild().asProperty() == null) {
+			lastIdx--;
+		}
+		return propertyPath.subList(0, lastIdx);
 	}
 
 	/**

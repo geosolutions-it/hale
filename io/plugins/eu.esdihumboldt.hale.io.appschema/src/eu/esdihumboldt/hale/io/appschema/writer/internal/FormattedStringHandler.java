@@ -22,16 +22,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.geotools.app_schema.AttributeExpressionMappingType;
-import org.geotools.app_schema.AttributeMappingType;
-import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
-import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping.AttributeMappings;
-
 import com.google.common.collect.ListMultimap;
 
-import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.ParameterValue;
-import eu.esdihumboldt.hale.common.align.model.Property;
 
 /**
  * TODO Type description
@@ -42,13 +35,11 @@ public class FormattedStringHandler extends AbstractPropertyTransformationHandle
 
 	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{(.+?)\\}");
 
+	/**
+	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.AbstractPropertyTransformationHandler#getSourceExpressionAsCQL()
+	 */
 	@Override
-	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
-			FeatureTypeMapping featureTypeMapping, AppSchemaMappingContext context) {
-		AttributeMappingType attributeMapping = new AttributeMappingType();
-
-		Property target = AppSchemaMappingUtils.getTargetProperty(propertyCell);
-
+	protected String getSourceExpressionAsCQL() {
 		ListMultimap<String, ParameterValue> parameters = propertyCell
 				.getTransformationParameters();
 		String pattern = parameters.get(PARAMETER_PATTERN).get(0).as(String.class);
@@ -121,22 +112,6 @@ public class FormattedStringHandler extends AbstractPropertyTransformationHandle
 			}
 		}
 
-		// set source attribute
-		AttributeExpressionMappingType sourceExpression = new AttributeExpressionMappingType();
-		sourceExpression.setOCQL(strConcatExpr);
-		// TODO: what about idExpression?
-		attributeMapping.setSourceExpression(sourceExpression);
-
-		// set target attribute
-		String targetAttribute = context.buildAttributeXPath(target.getDefinition());
-		attributeMapping.setTargetAttribute(targetAttribute);
-
-		AttributeMappings attrMappings = featureTypeMapping.getAttributeMappings();
-		if (attrMappings == null) {
-			attrMappings = new AttributeMappings();
-			featureTypeMapping.setAttributeMappings(attrMappings);
-		}
-		attrMappings.getAttributeMapping().add(attributeMapping);
-		return null;
+		return strConcatExpr;
 	}
 }

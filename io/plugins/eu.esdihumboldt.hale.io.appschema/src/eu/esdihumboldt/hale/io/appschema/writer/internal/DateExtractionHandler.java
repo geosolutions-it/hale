@@ -16,13 +16,6 @@
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
 import static eu.esdihumboldt.cst.functions.string.DateExtractionFunction.PARAMETER_DATE_FORMAT;
-
-import org.geotools.app_schema.AttributeExpressionMappingType;
-import org.geotools.app_schema.AttributeMappingType;
-import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
-import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping.AttributeMappings;
-
-import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.Property;
 
 /**
@@ -32,36 +25,18 @@ import eu.esdihumboldt.hale.common.align.model.Property;
  */
 public class DateExtractionHandler extends AbstractPropertyTransformationHandler {
 
+	/**
+	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.AbstractPropertyTransformationHandler#getSourceExpressionAsCQL()
+	 */
 	@Override
-	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
-			FeatureTypeMapping featureTypeMapping, AppSchemaMappingContext context) {
-		AttributeMappingType attributeMapping = new AttributeMappingType();
-
+	protected String getSourceExpressionAsCQL() {
+		Property source = AppSchemaMappingUtils.getSourceProperty(propertyCell);
 		String dateFormat = propertyCell.getTransformationParameters().get(PARAMETER_DATE_FORMAT)
 				.get(0).getStringRepresentation();
 
-		Property source = AppSchemaMappingUtils.getSourceProperty(propertyCell);
-		Property target = AppSchemaMappingUtils.getTargetProperty(propertyCell);
-
-		// set source attribute
-		AttributeExpressionMappingType sourceExpression = new AttributeExpressionMappingType();
-		// TODO: verify that math expressions work as-is in CQL
 		String dateStrProperty = source.getDefinition().getDefinition().getName().getLocalPart();
-		sourceExpression.setOCQL(String.format("dateParse(%s, '%s')", dateStrProperty, dateFormat));
-		// TODO: what about idExpression?
-		attributeMapping.setSourceExpression(sourceExpression);
+		String cqlExpression = String.format("dateParse(%s, '%s')", dateStrProperty, dateFormat);
 
-		// set target attribute
-		String targetAttribute = context.buildAttributeXPath(target.getDefinition());
-		attributeMapping.setTargetAttribute(targetAttribute);
-
-		AttributeMappings attrMappings = featureTypeMapping.getAttributeMappings();
-		if (attrMappings == null) {
-			attrMappings = new AttributeMappings();
-			featureTypeMapping.setAttributeMappings(attrMappings);
-		}
-		attrMappings.getAttributeMapping().add(attributeMapping);
-
-		return attributeMapping;
+		return cqlExpression;
 	}
 }

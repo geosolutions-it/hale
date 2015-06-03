@@ -20,14 +20,8 @@ import static eu.esdihumboldt.hale.common.align.model.functions.AssignFunction.P
 
 import java.util.List;
 
-import org.geotools.app_schema.AttributeExpressionMappingType;
-import org.geotools.app_schema.AttributeMappingType;
-import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
-import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping.AttributeMappings;
-
 import com.google.common.collect.ListMultimap;
 
-import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.align.model.ParameterValue;
 import eu.esdihumboldt.hale.common.align.model.Property;
@@ -39,27 +33,22 @@ import eu.esdihumboldt.hale.common.align.model.Property;
  */
 public class AssignHandler extends AbstractPropertyTransformationHandler {
 
+	/**
+	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.AbstractPropertyTransformationHandler#getSourceExpressionAsCQL()
+	 */
 	@Override
-	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
-			FeatureTypeMapping featureTypeMapping, AppSchemaMappingContext context) {
-
-		AttributeMappingType attributeMapping = new AttributeMappingType();
-
-		ListMultimap<String, ParameterValue> parameters = propertyCell
-				.getTransformationParameters();
-		List<ParameterValue> valueParams = parameters.get(PARAMETER_VALUE);
-		String value = valueParams.get(0).getStringRepresentation();
-
+	protected String getSourceExpressionAsCQL() {
 		ListMultimap<String, ? extends Entity> sourceEntities = propertyCell.getSource();
 		Property anchor = null;
 		if (sourceEntities != null && sourceEntities.containsKey(ENTITY_ANCHOR)) {
 			anchor = (Property) sourceEntities.get(ENTITY_ANCHOR).get(0);
 		}
 
-		Property target = AppSchemaMappingUtils.getTargetProperty(propertyCell);
+		ListMultimap<String, ParameterValue> parameters = propertyCell
+				.getTransformationParameters();
+		List<ParameterValue> valueParams = parameters.get(PARAMETER_VALUE);
+		String value = valueParams.get(0).getStringRepresentation();
 
-		// set source attribute
-		AttributeExpressionMappingType sourceExpression = new AttributeExpressionMappingType();
 		String ocql = null;
 		if (anchor != null) {
 			// TODO: generalize this code
@@ -69,23 +58,8 @@ public class AssignHandler extends AbstractPropertyTransformationHandler {
 		else {
 			ocql = "'" + value + "'";
 		}
-		sourceExpression.setOCQL(ocql);
-		// TODO: what about idExpression?
-		attributeMapping.setSourceExpression(sourceExpression);
 
-		// set target attribute
-		String targetAttribute = context.buildAttributeXPath(target.getDefinition());
-		attributeMapping.setTargetAttribute(targetAttribute);
-
-		AttributeMappings attrMappings = featureTypeMapping.getAttributeMappings();
-		if (attrMappings == null) {
-			attrMappings = new AttributeMappings();
-			featureTypeMapping.setAttributeMappings(attrMappings);
-		}
-		attrMappings.getAttributeMapping().add(attributeMapping);
-
-		return attributeMapping;
-
+		return ocql;
 	}
 
 }
