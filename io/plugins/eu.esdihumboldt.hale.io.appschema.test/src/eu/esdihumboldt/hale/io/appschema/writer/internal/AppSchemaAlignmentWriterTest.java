@@ -40,6 +40,7 @@ import eu.esdihumboldt.hale.common.schema.io.SchemaIO;
 import eu.esdihumboldt.hale.common.schema.io.SchemaReader;
 import eu.esdihumboldt.hale.common.schema.model.Schema;
 import eu.esdihumboldt.hale.common.schema.model.impl.DefaultSchemaSpace;
+import eu.esdihumboldt.hale.io.appschema.writer.AppSchemaAlignmentWriter;
 import eu.esdihumboldt.util.io.PathUpdate;
 
 public class AppSchemaAlignmentWriterTest {

@@ -1,0 +1,5 @@
+<namespace>
+    <id>${namespaceId}</id>
+    <prefix>${prefix}</prefix>
+    <uri>${uri}</uri>
+</namespace>

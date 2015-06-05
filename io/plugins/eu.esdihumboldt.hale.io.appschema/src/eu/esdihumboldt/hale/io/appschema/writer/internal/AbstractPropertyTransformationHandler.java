@@ -44,7 +44,7 @@ import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 public abstract class AbstractPropertyTransformationHandler implements
 		PropertyTransformationHandler {
 
-	protected AppSchemaMappingContext context;
+	protected AppSchemaMappingWrapper context;
 	protected Cell propertyCell;
 	protected Property targetProperty;
 
@@ -54,11 +54,11 @@ public abstract class AbstractPropertyTransformationHandler implements
 	/**
 	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.PropertyTransformationHandler#handlePropertyTransformation(eu.esdihumboldt.hale.common.align.model.Cell,
 	 *      org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping,
-	 *      eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingContext)
+	 *      eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingWrapper)
 	 */
 	@Override
 	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
-			AppSchemaMappingContext context) {
+			AppSchemaMappingWrapper context) {
 		this.context = context;
 		this.propertyCell = propertyCell;
 		// TODO: does this hold for any transformation function?

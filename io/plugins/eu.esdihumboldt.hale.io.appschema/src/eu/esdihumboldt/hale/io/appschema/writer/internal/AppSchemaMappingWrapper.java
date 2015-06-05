@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.geotools.app_schema.AppSchemaDataAccessType;
 import org.geotools.app_schema.AttributeMappingType;
@@ -28,6 +29,8 @@ import org.geotools.app_schema.IncludesPropertyType;
 import org.geotools.app_schema.NamespacesPropertyType;
 import org.geotools.app_schema.NamespacesPropertyType.Namespace;
 import org.geotools.app_schema.SourceDataStoresPropertyType;
+import org.geotools.app_schema.SourceDataStoresPropertyType.DataStore;
+import org.geotools.app_schema.SourceDataStoresPropertyType.DataStore.Parameters;
 import org.geotools.app_schema.TargetTypesPropertyType;
 import org.geotools.app_schema.TargetTypesPropertyType.FeatureType;
 import org.geotools.app_schema.TypeMappingsPropertyType;
@@ -36,7 +39,6 @@ import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping.Attri
 
 import com.google.common.base.Joiner;
 
-import eu.esdihumboldt.hale.common.align.model.Alignment;
 import eu.esdihumboldt.hale.common.align.model.ChildContext;
 import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
 import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
@@ -47,7 +49,7 @@ import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
  * 
  * @author stefano
  */
-public class AppSchemaMappingContext {
+public class AppSchemaMappingWrapper {
 
 	public static final String FEATURE_LINK_FIELD = "FEATURE_LINK";
 
@@ -58,14 +60,12 @@ public class AppSchemaMappingContext {
 	private final Map<Integer, FeatureTypeMapping> featureTypeMappings;
 	private final Map<Integer, AttributeMappingType> attributeMappings;
 
-	private final Alignment alignment;
 	private final AppSchemaDataAccessType appSchemaMapping;
 
 	/**
 	 * 
 	 */
-	public AppSchemaMappingContext(Alignment alignment, AppSchemaDataAccessType appSchemaMapping) {
-		this.alignment = alignment;
+	public AppSchemaMappingWrapper(AppSchemaDataAccessType appSchemaMapping) {
 		this.appSchemaMapping = appSchemaMapping;
 
 		this.namespaceUriMap = new HashMap<String, Namespace>();
@@ -91,6 +91,18 @@ public class AppSchemaMappingContext {
 		if (this.appSchemaMapping.getTypeMappings() == null) {
 			this.appSchemaMapping.setTypeMappings(new TypeMappingsPropertyType());
 		}
+	}
+
+	public DataStore getDefaultDataStore() {
+		List<DataStore> dataStores = appSchemaMapping.getSourceDataStores().getDataStore();
+		if (dataStores.size() == 0) {
+			DataStore defaultDS = new DataStore();
+			defaultDS.setId(UUID.randomUUID().toString());
+			defaultDS.setParameters(new Parameters());
+			dataStores.add(defaultDS);
+		}
+
+		return dataStores.get(0);
 	}
 
 	public Namespace getOrCreateNamespace(String namespaceURI, String prefix) {
@@ -206,6 +218,8 @@ public class AppSchemaMappingContext {
 			FeatureTypeMapping featureTypeMapping = new FeatureTypeMapping();
 			// initialize attribute mappings member
 			featureTypeMapping.setAttributeMappings(new AttributeMappings());
+			// TODO: how do I know the datasource from which data will be read?
+			featureTypeMapping.setSourceDataStore(getDefaultDataStore().getId());
 			// TODO: I'm getting the element name with
 			// targetType.getDisplayName():
 			// isn't there a more elegant (and perhaps more reliable) way to
@@ -267,13 +281,6 @@ public class AppSchemaMappingContext {
 		}
 
 		return pathBuilder.toString().hashCode();
-	}
-
-	/**
-	 * @return the alignment
-	 */
-	public Alignment getAlignment() {
-		return alignment;
 	}
 
 	/**

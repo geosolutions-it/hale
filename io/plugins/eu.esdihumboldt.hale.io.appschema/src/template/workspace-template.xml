@@ -1,0 +1,4 @@
+<workspace>
+    <id>${workspaceId}</id>
+    <name>${workspaceName}</name>
+</workspace>

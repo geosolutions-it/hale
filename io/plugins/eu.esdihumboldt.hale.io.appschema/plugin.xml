@@ -6,8 +6,8 @@
       <content-type
             base-type="org.eclipse.core.runtime.xml"
             file-extensions="xml"
-            id="eu.esdihumboldt.hale.io.appschema.config"
-            name="GeoTools app-schema"
+            id="eu.esdihumboldt.hale.io.appschema.mapping"
+            name="App-Schema Mapping File"
             priority="normal">
          <describer
                class="org.eclipse.core.runtime.content.XMLRootElementContentDescriber2">
@@ -17,17 +17,36 @@
             </parameter>
          </describer>
       </content-type>
+      <content-type
+            file-extensions="zip"
+            id="eu.esdihumboldt.hale.io.appschema.archive"
+            name="App-Schema Config Archive"
+            priority="normal">
+      </content-type>
    </extension>
    <extension
          point="eu.esdihumboldt.hale.io.provider">
       <provider
-            class="eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaAlignmentWriter"
+            class="eu.esdihumboldt.hale.io.appschema.writer.AppSchemaAlignmentWriter"
             id="eu.esdihumboldt.hale.io.appschema.writer"
-            name="GeoTools app-schema">
+            name="App-Schema Configuration">
          <contentType
-               ref="eu.esdihumboldt.hale.io.appschema.config">
+               ref="eu.esdihumboldt.hale.io.appschema.mapping">
+         </contentType>
+         <contentType
+               ref="eu.esdihumboldt.hale.io.appschema.archive">
          </contentType>
       </provider>
+   </extension>
+   <extension
+         point="eu.esdihumboldt.hale.io.complexvalue">
+      <complexValue
+            descriptor="eu.esdihumboldt.hale.io.appschema.DataStoreComplexType"
+            id="eu.esdihumboldt.hale.io.appschema.datastore"
+            name="DataStore"
+            namespace="http://www.geotools.org/app-schema"
+            type="org.geotools.app_schema.SourceDataStoresPropertyType$DataStore">
+      </complexValue>
    </extension>
 
 </plugin>

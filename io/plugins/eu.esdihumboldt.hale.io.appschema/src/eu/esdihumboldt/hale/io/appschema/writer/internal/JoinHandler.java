@@ -29,6 +29,7 @@ import org.geotools.app_schema.AttributeExpressionMappingType;
 import org.geotools.app_schema.AttributeMappingType;
 import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 
+import eu.esdihumboldt.hale.common.align.model.Alignment;
 import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.ChildContext;
 import eu.esdihumboldt.hale.common.align.model.Entity;
@@ -52,11 +53,11 @@ public class JoinHandler implements TypeTransformationHandler {
 
 	/**
 	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandler#handleTypeTransformation(eu.esdihumboldt.hale.common.align.model.Cell,
-	 *      eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingContext)
+	 *      eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingWrapper)
 	 */
 	@Override
-	public FeatureTypeMapping handleTypeTransformation(Cell typeCell,
-			AppSchemaMappingContext context) {
+	public FeatureTypeMapping handleTypeTransformation(Alignment alignment, Cell typeCell,
+			AppSchemaMappingWrapper context) {
 
 		JoinParameter joinParameter = typeCell.getTransformationParameters().get(PARAMETER_JOIN)
 				.get(0).as(JoinParameter.class);
@@ -87,15 +88,12 @@ public class JoinHandler implements TypeTransformationHandler {
 
 		FeatureTypeMapping containerFTMapping = context
 				.getOrCreateFeatureTypeMapping(containerTypeTargetType);
-		// TODO: how do I know the datasource from which data will be read?
-		containerFTMapping.setSourceDataStore("datastore");
 		containerFTMapping.setSourceType(containerType.getDefinition().getName().getLocalPart());
 
 		// build FeatureTypeMapping for contained type
 		FeatureTypeMapping containedFTMapping = null;
 		List<ChildContext> containedFTPath = null;
-		Collection<? extends Cell> propertyCells = context.getAlignment()
-				.getPropertyCells(typeCell);
+		Collection<? extends Cell> propertyCells = alignment.getPropertyCells(typeCell);
 		for (Cell propertyCell : propertyCells) {
 			Property sourceProperty = AppSchemaMappingUtils.getSourceProperty(propertyCell);
 			if (sourceProperty != null) {
@@ -113,9 +111,6 @@ public class JoinHandler implements TypeTransformationHandler {
 						containedFTPath = findOwningFeatureTypePath(targetProperty.getDefinition());
 
 						containedFTMapping = context.getOrCreateFeatureTypeMapping(targetFT);
-						// TODO: how do I know the datasource from which data
-						// will be read?
-						containedFTMapping.setSourceDataStore("datastore");
 						containedFTMapping.setSourceType(containedType.getDefinition().getName()
 								.getLocalPart());
 
@@ -166,7 +161,7 @@ public class JoinHandler implements TypeTransformationHandler {
 			// TODO: support multiple joins (e.g. FEATURE_LINK[1],
 			// FEATURE_LINK[2],
 			// ...)
-			containerSourceExpr.setLinkField(AppSchemaMappingContext.FEATURE_LINK_FIELD);
+			containerSourceExpr.setLinkField(AppSchemaMappingWrapper.FEATURE_LINK_FIELD);
 			containerJoinMapping.setSourceExpression(containerSourceExpr);
 
 			AttributeMappingType containedJoinMapping = new AttributeMappingType();
@@ -177,7 +172,7 @@ public class JoinHandler implements TypeTransformationHandler {
 			// TODO: support multiple joins (e.g. FEATURE_LINK[1],
 			// FEATURE_LINK[2],
 			// ...)
-			containedJoinMapping.setTargetAttribute(AppSchemaMappingContext.FEATURE_LINK_FIELD);
+			containedJoinMapping.setTargetAttribute(AppSchemaMappingWrapper.FEATURE_LINK_FIELD);
 			containedFTMapping.getAttributeMappings().getAttributeMapping()
 					.add(containedJoinMapping);
 		}

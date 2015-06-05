@@ -33,7 +33,7 @@
     </namespaces>
     <sourceDataStores>
         <DataStore>
-            <id>datastore</id>
+            <id>dataStore</id>
             <parameters>
                 <Parameter><name>Connection timeout</name><value>20</value></Parameter>
                 <Parameter><name>port</name><value>5432</value></Parameter>
@@ -59,7 +59,7 @@
                 <Parameter><name>Expose primary keys</name><value>false</value></Parameter>
                 <Parameter><name>Max open prepared statements</name><value>50</value></Parameter>
                 <Parameter><name>Estimated extends</name><value>true</value></Parameter>
-                <Parameter><name>user</name><value></value></Parameter>
+                <Parameter><name>user</name><value>postgres</value></Parameter>
             </parameters>
         </DataStore>
     </sourceDataStores>

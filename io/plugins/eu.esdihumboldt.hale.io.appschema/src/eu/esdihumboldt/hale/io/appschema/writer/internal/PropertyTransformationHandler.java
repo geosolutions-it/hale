@@ -27,6 +27,6 @@ import eu.esdihumboldt.hale.common.align.model.Cell;
 public interface PropertyTransformationHandler {
 
 	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
-			AppSchemaMappingContext context);
+			AppSchemaMappingWrapper context);
 
 }
