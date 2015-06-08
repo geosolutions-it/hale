@@ -54,6 +54,7 @@ public class AssignHandler extends AbstractPropertyTransformationHandler {
 			// TODO: generalize this code
 			String anchorAttr = anchor.getDefinition().getDefinition().getName().getLocalPart();
 			ocql = "if_then_else(isNull(" + anchorAttr + "), Expression.NIL, '" + value + "')";
+			ocql = getConditionalExpression(anchor.getDefinition(), ocql);
 		}
 		else {
 			ocql = "'" + value + "'";

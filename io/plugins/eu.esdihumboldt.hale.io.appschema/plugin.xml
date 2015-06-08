@@ -48,5 +48,20 @@
             type="org.geotools.app_schema.SourceDataStoresPropertyType$DataStore">
       </complexValue>
    </extension>
+   <extension
+         point="eu.esdihumboldt.hale.align.compatibility">
+      <compatibility
+            class="eu.esdihumboldt.hale.io.appschema.compatibility.GeoServerCompatibilityMode"
+            id="eu.esdihumboldt.hale.io.appschema.compatibility"
+            key="eu.esdihumboldt.hale.io.appschema.compatibility.geoserver"
+            name="GeoServer">
+         <supportsFilter
+               ref="CQL">
+         </supportsFilter>
+         <supportsFilter
+               ref="ECQL">
+         </supportsFilter>
+      </compatibility>
+   </extension>
 
 </plugin>

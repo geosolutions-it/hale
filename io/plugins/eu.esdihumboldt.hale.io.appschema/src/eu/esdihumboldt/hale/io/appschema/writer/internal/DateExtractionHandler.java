@@ -37,6 +37,6 @@ public class DateExtractionHandler extends AbstractPropertyTransformationHandler
 		String dateStrProperty = source.getDefinition().getDefinition().getName().getLocalPart();
 		String cqlExpression = String.format("dateParse(%s, '%s')", dateStrProperty, dateFormat);
 
-		return cqlExpression;
+		return getConditionalExpression(source.getDefinition(), cqlExpression);
 	}
 }

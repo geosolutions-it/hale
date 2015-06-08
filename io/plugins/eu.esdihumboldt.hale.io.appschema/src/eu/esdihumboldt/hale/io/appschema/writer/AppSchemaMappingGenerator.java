@@ -100,9 +100,9 @@ public class AppSchemaMappingGenerator {
 	}
 
 	public void generateMapping(OutputStream output, IOReporter reporter) throws JAXBException {
-		AppSchemaDataAccessType mapping = loadMappingTemplate();
+		AppSchemaMappingWrapper mappingWrapper = generateMapping(reporter);;
 
-		writeMappingConf(mapping, output);
+		writeMappingConf(mappingWrapper.getAppSchemaMapping(), output);
 	}
 
 	private void applyDataStoreConfig(AppSchemaMappingWrapper wrapper) {

@@ -17,6 +17,12 @@ package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
 import static eu.esdihumboldt.cst.functions.numeric.MathematicalExpressionFunction.PARAMETER_EXPRESSION;
 
+import java.util.List;
+
+import eu.esdihumboldt.cst.functions.numeric.MathematicalExpression;
+import eu.esdihumboldt.hale.common.align.model.Entity;
+import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
+
 /**
  * TODO Type description
  * 
@@ -32,6 +38,21 @@ public class MathematicalExpressionHandler extends AbstractPropertyTransformatio
 		// TODO: verify math expressions work as-is in CQL
 		String mathExpression = propertyCell.getTransformationParameters()
 				.get(PARAMETER_EXPRESSION).get(0).getStringRepresentation();
+
+		// if properties used in the expression have conditions defined on them,
+		// expression should be evaluated only if all conditions are met
+		if (propertyCell.getSource() != null) {
+			List<? extends Entity> sourceEntities = propertyCell.getSource().get(
+					MathematicalExpression.ENTITY_VARIABLE);
+
+			if (sourceEntities != null) {
+				for (Entity source : sourceEntities) {
+					PropertyEntityDefinition propEntityDef = (PropertyEntityDefinition) source
+							.getDefinition();
+					mathExpression = getConditionalExpression(propEntityDef, mathExpression);
+				}
+			}
+		}
 
 		return mathExpression;
 	}

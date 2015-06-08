@@ -41,11 +41,16 @@ import eu.esdihumboldt.hale.io.xsd.constraint.XmlAttributeFlag;
  */
 public class AppSchemaMappingUtils {
 
+	public static final QName QNAME_GML_ID = new QName("http://www.opengis.net/gml/3.2", "id");
 	public static final QName QNAME_ABSTRACT_FEATURE_TYPE = new QName(
 			"http://www.opengis.net/gml/3.2", "AbstractFeatureType");
 	public static final QName QNAME_ABSTRACT_GEOMETRY_TYPE = new QName(
 			"http://www.opengis.net/gml/3.2", "AbstractGeometryType");
 	public static final QName QNAME_XLINK_XREF = new QName("http://www.w3.org/1999/xlink", "href");
+
+	public static boolean isGmlId(PropertyDefinition propertyDef) {
+		return propertyDef != null && propertyDef.getName().equals(QNAME_GML_ID);
+	}
 
 	public static boolean isXmlAttribute(PropertyDefinition propertyDef) {
 		XmlAttributeFlag xmlAttrFlag = propertyDef.getConstraint(XmlAttributeFlag.class);

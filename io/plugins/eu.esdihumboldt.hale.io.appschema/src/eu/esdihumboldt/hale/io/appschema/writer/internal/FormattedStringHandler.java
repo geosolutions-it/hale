@@ -24,7 +24,10 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ListMultimap;
 
+import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.align.model.ParameterValue;
+import eu.esdihumboldt.hale.common.align.model.functions.FormattedStringFunction;
+import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
 
 /**
  * TODO Type description
@@ -109,6 +112,21 @@ public class FormattedStringHandler extends AbstractPropertyTransformationHandle
 			else {
 				// no second argument could be found: should stop here
 				break;
+			}
+		}
+
+		// if properties used in the expression have conditions defined on them,
+		// expression should be evaluated only if all conditions are met
+		if (propertyCell.getSource() != null) {
+			List<? extends Entity> sourceEntities = propertyCell.getSource().get(
+					FormattedStringFunction.ENTITY_VARIABLE);
+
+			if (sourceEntities != null) {
+				for (Entity source : sourceEntities) {
+					PropertyEntityDefinition propEntityDef = (PropertyEntityDefinition) source
+							.getDefinition();
+					strConcatExpr = getConditionalExpression(propEntityDef, strConcatExpr);
+				}
 			}
 		}
 

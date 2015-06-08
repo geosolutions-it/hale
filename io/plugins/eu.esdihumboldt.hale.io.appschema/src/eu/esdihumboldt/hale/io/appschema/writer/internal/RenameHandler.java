@@ -33,7 +33,7 @@ public class RenameHandler extends AbstractPropertyTransformationHandler {
 
 		String cqlExpression = source.getDefinition().getDefinition().getName().getLocalPart();
 
-		return cqlExpression;
+		return getConditionalExpression(source.getDefinition(), cqlExpression);
 	}
 
 }

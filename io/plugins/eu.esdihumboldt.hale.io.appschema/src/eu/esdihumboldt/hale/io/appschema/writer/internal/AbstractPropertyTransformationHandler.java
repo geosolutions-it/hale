@@ -18,6 +18,8 @@ package eu.esdihumboldt.hale.io.appschema.writer.internal;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findOwningFeatureType;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.getContainerPropertyPath;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.getTargetProperty;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.isGmlId;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.isXmlAttribute;
 
 import java.util.List;
 
@@ -29,8 +31,10 @@ import org.geotools.app_schema.AttributeMappingType.ClientProperty;
 import org.geotools.app_schema.NamespacesPropertyType.Namespace;
 import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 
+import eu.esdihumboldt.hale.common.align.model.AlignmentUtil;
 import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.ChildContext;
+import eu.esdihumboldt.hale.common.align.model.Condition;
 import eu.esdihumboldt.hale.common.align.model.Property;
 import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
 import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
@@ -77,7 +81,65 @@ public abstract class AbstractPropertyTransformationHandler implements
 			String cqlValue = getSourceExpressionAsCQL();
 
 			// fetch AttributeMappingType from context
-			if (!AppSchemaMappingUtils.isXmlAttribute(targetPropertyDef)) {
+			if (isXmlAttribute(targetPropertyDef)) {
+				// gml:id attribute requires special handling
+				if (isGmlId(targetPropertyDef)) {
+					attributeMapping = context.getOrCreateAttributeMapping(targetPropertyEntityDef
+							.getPropertyPath());
+					// set targetAttribute to feature type qualified name
+					attributeMapping.setTargetAttribute(context.getOrCreateFeatureTypeMapping(
+							featureType).getTargetElement());
+					// set id expression
+					AttributeExpressionMappingType idExpression = new AttributeExpressionMappingType();
+					idExpression.setOCQL(cqlValue);
+					// TODO: not sure whether any CQL expression can be used
+					// here
+					attributeMapping.setIdExpression(idExpression);
+				}
+				else {
+					// fetch attribute mapping for parent property
+					AlignmentUtil.getParent(targetPropertyEntityDef);
+					List<ChildContext> propertyPath = targetPropertyEntityDef.getPropertyPath();
+					int parentPropertyIdx = propertyPath.size() - 2;
+					if (parentPropertyIdx >= 0) {
+						PropertyDefinition parentPropertyDef = propertyPath.get(parentPropertyIdx)
+								.getChild().asProperty();
+						List<ChildContext> parentPropertyPath = propertyPath.subList(0,
+								parentPropertyIdx + 1);
+						if (parentPropertyDef != null) {
+							attributeMapping = context
+									.getOrCreateAttributeMapping(parentPropertyPath);
+							// set targetAttribute if empty
+							if (attributeMapping.getTargetAttribute() == null
+									|| attributeMapping.getTargetAttribute().isEmpty()) {
+								attributeMapping.setTargetAttribute(context
+										.buildAttributeXPath(parentPropertyPath));
+							}
+
+							Namespace parentPropNS = context.getOrCreateNamespace(parentPropertyDef
+									.getName().getNamespaceURI(), parentPropertyDef.getName()
+									.getPrefix());
+							Namespace targetPropNS = context.getOrCreateNamespace(targetPropertyDef
+									.getName().getNamespaceURI(), targetPropertyDef.getName()
+									.getPrefix());
+							String unqualifiedName = targetPropertyDef.getName().getLocalPart();
+							boolean isQualified = !parentPropNS.getUri().equals(
+									targetPropNS.getUri());
+
+							// encode attribute as <ClientProperty>
+							ClientProperty clientProperty = new ClientProperty();
+							String clientPropName = (isQualified) ? targetPropNS.getPrefix() + ":"
+									+ unqualifiedName : unqualifiedName;
+							clientProperty.setName(clientPropName);
+							clientProperty.setValue(cqlValue);
+
+							attributeMapping.getClientProperty().add(clientProperty);
+						}
+
+					}
+				}
+			}
+			else {
 				attributeMapping = context.getOrCreateAttributeMapping(targetPropertyEntityDef
 						.getPropertyPath());
 
@@ -108,53 +170,38 @@ public abstract class AbstractPropertyTransformationHandler implements
 				if (AppSchemaMappingUtils.isMultiple(targetPropertyDef)) {
 					attributeMapping.setIsMultiple(true);
 				}
-				// TODO: idExpression?
 				// TODO: isList?
 				// TODO: targetAttributeNode?
 				// TODO: encodeIfEmpty?
 			}
-			else {
-				// fetch attribute mapping for parent property
-				List<ChildContext> propertyPath = targetPropertyEntityDef.getPropertyPath();
-				int parentPropertyIdx = propertyPath.size() - 2;
-				if (parentPropertyIdx >= 0) {
-					PropertyDefinition parentPropertyDef = propertyPath.get(parentPropertyIdx)
-							.getChild().asProperty();
-					List<ChildContext> parentPropertyPath = propertyPath.subList(0,
-							parentPropertyIdx + 1);
-					if (parentPropertyDef != null) {
-						attributeMapping = context.getOrCreateAttributeMapping(parentPropertyPath);
-						// set targetAttribute if empty
-						if (attributeMapping.getTargetAttribute() == null
-								|| attributeMapping.getTargetAttribute().isEmpty()) {
-							attributeMapping.setTargetAttribute(context
-									.buildAttributeXPath(parentPropertyPath));
-						}
+		}
 
-						Namespace parentPropNS = context.getOrCreateNamespace(parentPropertyDef
-								.getName().getNamespaceURI(), parentPropertyDef.getName()
-								.getPrefix());
-						Namespace targetPropNS = context.getOrCreateNamespace(targetPropertyDef
-								.getName().getNamespaceURI(), targetPropertyDef.getName()
-								.getPrefix());
-						String unqualifiedName = targetPropertyDef.getName().getLocalPart();
-						boolean isQualified = !parentPropNS.getUri().equals(targetPropNS.getUri());
+		return attributeMapping;
+	}
 
-						// encode attribute as <ClientProperty>
-						ClientProperty clientProperty = new ClientProperty();
-						String clientPropName = (isQualified) ? targetPropNS.getPrefix() + ":"
-								+ unqualifiedName : unqualifiedName;
-						clientProperty.setName(clientPropName);
-						clientProperty.setValue(cqlValue);
+	protected static String getConditionalExpression(PropertyEntityDefinition propertyEntityDef,
+			String cql) {
+		if (propertyEntityDef != null) {
+			String propertyName = propertyEntityDef.getDefinition().getName().getLocalPart();
+			List<ChildContext> propertyPath = propertyEntityDef.getPropertyPath();
+			// TODO: conditions are supported only on simple (not nested)
+			// properties
+			if (propertyPath.size() == 1) {
+				Condition condition = propertyPath.get(0).getCondition();
+				if (condition != null) {
+					String fitlerText = AlignmentUtil.getFilterText(condition.getFilter());
+					// remove "parent" references
+					fitlerText = fitlerText.replace("parent.", "");
+					// replace "value" references with the local name of the
+					// property itself
+					fitlerText = fitlerText.replace("value", propertyName);
 
-						attributeMapping.getClientProperty().add(clientProperty);
-					}
-
+					return String.format("if_then_else(%s, %s, Expression.NIL)", fitlerText, cql);
 				}
 			}
 		}
 
-		return attributeMapping;
+		return cql;
 	}
 
 //	protected abstract AttributeMappingType handlePropertyTransformation(Cell propertyCell,
