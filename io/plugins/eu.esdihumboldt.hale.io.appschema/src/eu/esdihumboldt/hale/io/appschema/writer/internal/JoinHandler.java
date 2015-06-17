@@ -75,9 +75,9 @@ public class JoinHandler implements TypeTransformationHandler {
 		}
 
 		// TODO: I assume the first type is the container type, whereas the
-		// second type is contained in the first
+		// second type is nested in the first
 		TypeEntityDefinition containerType = joinParameter.types.get(0);
-		TypeEntityDefinition containedType = joinParameter.types.get(1);
+		TypeEntityDefinition nestedType = joinParameter.types.get(1);
 		JoinCondition joinCondition = joinParameter.conditions.iterator().next();
 		baseProperty = joinCondition.baseProperty;
 		joinProperty = joinCondition.joinProperty;
@@ -90,17 +90,17 @@ public class JoinHandler implements TypeTransformationHandler {
 				.getOrCreateFeatureTypeMapping(containerTypeTargetType);
 		containerFTMapping.setSourceType(containerType.getDefinition().getName().getLocalPart());
 
-		// build FeatureTypeMapping for contained type
-		FeatureTypeMapping containedFTMapping = null;
-		List<ChildContext> containedFTPath = null;
+		// build FeatureTypeMapping for nested type
+		FeatureTypeMapping nestedFTMapping = null;
+		List<ChildContext> nestedFTPath = null;
 		Collection<? extends Cell> propertyCells = alignment.getPropertyCells(typeCell);
 		for (Cell propertyCell : propertyCells) {
 			Property sourceProperty = AppSchemaMappingUtils.getSourceProperty(propertyCell);
 			if (sourceProperty != null) {
 				TypeDefinition sourceType = sourceProperty.getDefinition().getDefinition()
 						.getParentType();
-				if (sourceType.getName().equals(containedType.getDefinition().getName())) {
-					// source property belongs to contained type: determine
+				if (sourceType.getName().equals(nestedType.getDefinition().getName())) {
+					// source property belongs to nested type: determine
 					// target type
 					Property targetProperty = getTargetProperty(propertyCell);
 					TypeDefinition targetFT = findOwningFeatureType(targetProperty.getDefinition());
@@ -108,10 +108,10 @@ public class JoinHandler implements TypeTransformationHandler {
 							&& !targetFT.getName().equals(containerTypeTargetType.getName())) {
 						// target property belongs to a feature type different
 						// from the already mapped one: build a new mapping
-						containedFTPath = findOwningFeatureTypePath(targetProperty.getDefinition());
+						nestedFTPath = findOwningFeatureTypePath(targetProperty.getDefinition());
 
-						containedFTMapping = context.getOrCreateFeatureTypeMapping(targetFT);
-						containedFTMapping.setSourceType(containedType.getDefinition().getName()
+						nestedFTMapping = context.getOrCreateFeatureTypeMapping(targetFT);
+						nestedFTMapping.setSourceType(nestedType.getDefinition().getName()
 								.getLocalPart());
 
 						// TODO: I assume at most 2 FeatureTypes are involved in
@@ -130,8 +130,8 @@ public class JoinHandler implements TypeTransformationHandler {
 						TypeDefinition childFT = findChildFeatureType(xrefParentType);
 
 						if (childFT != null) {
-							containedFTPath = xrefContainerPath;
-							containedFTMapping = context.getOrCreateFeatureTypeMapping(childFT);
+							nestedFTPath = xrefContainerPath;
+							nestedFTMapping = context.getOrCreateFeatureTypeMapping(childFT);
 
 							// TODO: I assume at most 2 FeatureTypes are
 							// involved in the join
@@ -143,12 +143,12 @@ public class JoinHandler implements TypeTransformationHandler {
 		}
 
 		// build join mapping
-		if (containedFTMapping != null && containedFTPath != null) {
+		if (nestedFTMapping != null && nestedFTPath != null) {
 			AttributeMappingType containerJoinMapping = context
-					.getOrCreateAttributeMapping(containedFTPath);
-			containerJoinMapping.setTargetAttribute(context.buildAttributeXPath(containedFTPath));
+					.getOrCreateAttributeMapping(nestedFTPath);
+			containerJoinMapping.setTargetAttribute(context.buildAttributeXPath(nestedFTPath));
 			// set isMultiple attribute
-			PropertyDefinition targetPropertyDef = containedFTPath.get(containedFTPath.size() - 1)
+			PropertyDefinition targetPropertyDef = nestedFTPath.get(nestedFTPath.size() - 1)
 					.getChild().asProperty();
 			if (AppSchemaMappingUtils.isMultiple(targetPropertyDef)) {
 				containerJoinMapping.setIsMultiple(true);
@@ -157,24 +157,23 @@ public class JoinHandler implements TypeTransformationHandler {
 			AttributeExpressionMappingType containerSourceExpr = new AttributeExpressionMappingType();
 			// join column extracted from join condition
 			containerSourceExpr.setOCQL(baseProperty.getDefinition().getName().getLocalPart());
-			containerSourceExpr.setLinkElement(containedFTMapping.getTargetElement());
+			containerSourceExpr.setLinkElement(nestedFTMapping.getTargetElement());
 			// TODO: support multiple joins (e.g. FEATURE_LINK[1],
 			// FEATURE_LINK[2],
 			// ...)
 			containerSourceExpr.setLinkField(AppSchemaMappingWrapper.FEATURE_LINK_FIELD);
 			containerJoinMapping.setSourceExpression(containerSourceExpr);
 
-			AttributeMappingType containedJoinMapping = new AttributeMappingType();
-			AttributeExpressionMappingType containedSourceExpr = new AttributeExpressionMappingType();
+			AttributeMappingType nestedJoinMapping = new AttributeMappingType();
+			AttributeExpressionMappingType nestedSourceExpr = new AttributeExpressionMappingType();
 			// join column extracted from join condition
-			containedSourceExpr.setOCQL(joinProperty.getDefinition().getName().getLocalPart());
-			containedJoinMapping.setSourceExpression(containedSourceExpr);
+			nestedSourceExpr.setOCQL(joinProperty.getDefinition().getName().getLocalPart());
+			nestedJoinMapping.setSourceExpression(nestedSourceExpr);
 			// TODO: support multiple joins (e.g. FEATURE_LINK[1],
 			// FEATURE_LINK[2],
 			// ...)
-			containedJoinMapping.setTargetAttribute(AppSchemaMappingWrapper.FEATURE_LINK_FIELD);
-			containedFTMapping.getAttributeMappings().getAttributeMapping()
-					.add(containedJoinMapping);
+			nestedJoinMapping.setTargetAttribute(AppSchemaMappingWrapper.FEATURE_LINK_FIELD);
+			nestedFTMapping.getAttributeMappings().getAttributeMapping().add(nestedJoinMapping);
 		}
 
 		return containerFTMapping;

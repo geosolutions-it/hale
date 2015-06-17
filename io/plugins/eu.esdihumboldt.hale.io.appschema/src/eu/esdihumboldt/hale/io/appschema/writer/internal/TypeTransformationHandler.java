@@ -8,6 +8,6 @@ import eu.esdihumboldt.hale.common.align.model.Cell;
 public interface TypeTransformationHandler {
 
 	public FeatureTypeMapping handleTypeTransformation(Alignment alignment, Cell typeCell,
-			AppSchemaMappingWrapper context);
+			AppSchemaMappingWrapper mapping);
 
 }

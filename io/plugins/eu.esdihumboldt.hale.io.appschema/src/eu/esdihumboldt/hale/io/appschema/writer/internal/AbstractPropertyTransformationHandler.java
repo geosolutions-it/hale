@@ -16,8 +16,8 @@
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findOwningFeatureType;
-import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.getContainerPropertyPath;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.getTargetProperty;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.isGeometryType;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.isGmlId;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.isXmlAttribute;
 
@@ -35,8 +35,10 @@ import eu.esdihumboldt.hale.common.align.model.AlignmentUtil;
 import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.ChildContext;
 import eu.esdihumboldt.hale.common.align.model.Condition;
+import eu.esdihumboldt.hale.common.align.model.EntityDefinition;
 import eu.esdihumboldt.hale.common.align.model.Property;
 import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
+import eu.esdihumboldt.hale.common.schema.model.Definition;
 import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 
@@ -48,7 +50,7 @@ import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 public abstract class AbstractPropertyTransformationHandler implements
 		PropertyTransformationHandler {
 
-	protected AppSchemaMappingWrapper context;
+	protected AppSchemaMappingWrapper mapping;
 	protected Cell propertyCell;
 	protected Property targetProperty;
 
@@ -62,121 +64,147 @@ public abstract class AbstractPropertyTransformationHandler implements
 	 */
 	@Override
 	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
-			AppSchemaMappingWrapper context) {
-		this.context = context;
+			AppSchemaMappingWrapper mapping) {
+		this.mapping = mapping;
 		this.propertyCell = propertyCell;
 		// TODO: does this hold for any transformation function?
 		this.targetProperty = getTargetProperty(propertyCell);
 
 		PropertyEntityDefinition targetPropertyEntityDef = targetProperty.getDefinition();
 		PropertyDefinition targetPropertyDef = targetPropertyEntityDef.getDefinition();
-		TypeDefinition targetPropertyType = targetPropertyDef.getPropertyType();
 		TypeDefinition featureType = findOwningFeatureType(targetPropertyEntityDef);
 
 		// in a well-formed mapping, should always be != null
 		if (featureType != null) {
-			// fetch FeatureTypeMapping from context
-			this.featureTypeMapping = context.getOrCreateFeatureTypeMapping(featureType);
+			// fetch FeatureTypeMapping from mapping
+			this.featureTypeMapping = mapping.getOrCreateFeatureTypeMapping(featureType);
 
-			String cqlValue = getSourceExpressionAsCQL();
-
-			// fetch AttributeMappingType from context
+			// fetch AttributeMappingType from mapping
 			if (isXmlAttribute(targetPropertyDef)) {
 				// gml:id attribute requires special handling
 				if (isGmlId(targetPropertyDef)) {
-					attributeMapping = context.getOrCreateAttributeMapping(targetPropertyEntityDef
-							.getPropertyPath());
-					// set targetAttribute to feature type qualified name
-					attributeMapping.setTargetAttribute(context.getOrCreateFeatureTypeMapping(
-							featureType).getTargetElement());
-					// set id expression
-					AttributeExpressionMappingType idExpression = new AttributeExpressionMappingType();
-					idExpression.setOCQL(cqlValue);
-					// TODO: not sure whether any CQL expression can be used
-					// here
-					attributeMapping.setIdExpression(idExpression);
+					handleAsGmlId(featureType);
 				}
 				else {
-					// fetch attribute mapping for parent property
-					AlignmentUtil.getParent(targetPropertyEntityDef);
-					List<ChildContext> propertyPath = targetPropertyEntityDef.getPropertyPath();
-					int parentPropertyIdx = propertyPath.size() - 2;
-					if (parentPropertyIdx >= 0) {
-						PropertyDefinition parentPropertyDef = propertyPath.get(parentPropertyIdx)
-								.getChild().asProperty();
-						List<ChildContext> parentPropertyPath = propertyPath.subList(0,
-								parentPropertyIdx + 1);
-						if (parentPropertyDef != null) {
-							attributeMapping = context
-									.getOrCreateAttributeMapping(parentPropertyPath);
-							// set targetAttribute if empty
-							if (attributeMapping.getTargetAttribute() == null
-									|| attributeMapping.getTargetAttribute().isEmpty()) {
-								attributeMapping.setTargetAttribute(context
-										.buildAttributeXPath(parentPropertyPath));
-							}
-
-							Namespace parentPropNS = context.getOrCreateNamespace(parentPropertyDef
-									.getName().getNamespaceURI(), parentPropertyDef.getName()
-									.getPrefix());
-							Namespace targetPropNS = context.getOrCreateNamespace(targetPropertyDef
-									.getName().getNamespaceURI(), targetPropertyDef.getName()
-									.getPrefix());
-							String unqualifiedName = targetPropertyDef.getName().getLocalPart();
-							boolean isQualified = !parentPropNS.getUri().equals(
-									targetPropNS.getUri());
-
-							// encode attribute as <ClientProperty>
-							ClientProperty clientProperty = new ClientProperty();
-							String clientPropName = (isQualified) ? targetPropNS.getPrefix() + ":"
-									+ unqualifiedName : unqualifiedName;
-							clientProperty.setName(clientPropName);
-							clientProperty.setValue(cqlValue);
-
-							attributeMapping.getClientProperty().add(clientProperty);
-						}
-
-					}
+					handleAsXmlAttribute();
 				}
 			}
 			else {
-				attributeMapping = context.getOrCreateAttributeMapping(targetPropertyEntityDef
-						.getPropertyPath());
-
-				List<ChildContext> targetPropertyPath = null;
-				if (AppSchemaMappingUtils.isGeometryType(targetPropertyType)) {
-					// GeometryTypes require special handling
-					targetPropertyPath = getContainerPropertyPath(targetPropertyEntityDef
-							.getPropertyPath());
-
-					QName geomTypeName = targetPropertyType.getName();
-					Namespace geomNS = context.getOrCreateNamespace(geomTypeName.getNamespaceURI(),
-							geomTypeName.getPrefix());
-					attributeMapping.setTargetAttributeNode(geomNS.getPrefix() + ":"
-							+ geomTypeName.getLocalPart());
-				}
-				else {
-					targetPropertyPath = targetPropertyEntityDef.getPropertyPath();
-				}
-
-				// set target attribute
-				attributeMapping
-						.setTargetAttribute(context.buildAttributeXPath(targetPropertyPath));
-				// set source expression
-				AttributeExpressionMappingType sourceExpression = new AttributeExpressionMappingType();
-				// TODO: is this general enough?
-				sourceExpression.setOCQL(cqlValue);
-				attributeMapping.setSourceExpression(sourceExpression);
-				if (AppSchemaMappingUtils.isMultiple(targetPropertyDef)) {
-					attributeMapping.setIsMultiple(true);
-				}
-				// TODO: isList?
-				// TODO: targetAttributeNode?
-				// TODO: encodeIfEmpty?
+				handleAsXmlElement();
 			}
 		}
 
 		return attributeMapping;
+	}
+
+	protected void handleAsGmlId(TypeDefinition featureType) {
+		PropertyEntityDefinition targetPropertyEntityDef = targetProperty.getDefinition();
+		List<ChildContext> gmlIdPath = targetPropertyEntityDef.getPropertyPath();
+
+		attributeMapping = mapping.getOrCreateAttributeMapping(gmlIdPath);
+		// set targetAttribute to feature type qualified name
+		attributeMapping.setTargetAttribute(mapping.getOrCreateFeatureTypeMapping(featureType)
+				.getTargetElement());
+		// set id expression
+		AttributeExpressionMappingType idExpression = new AttributeExpressionMappingType();
+		idExpression.setOCQL(getSourceExpressionAsCQL());
+		// TODO: not sure whether any CQL expression can be used
+		// here
+		attributeMapping.setIdExpression(idExpression);
+	}
+
+	protected void handleAsXmlAttribute() {
+		PropertyEntityDefinition targetPropertyEntityDef = targetProperty.getDefinition();
+		PropertyDefinition targetPropertyDef = targetPropertyEntityDef.getDefinition();
+
+		// fetch attribute mapping for parent property
+		EntityDefinition parentDef = AlignmentUtil.getParent(targetPropertyEntityDef);
+		if (parentDef != null) {
+			List<ChildContext> parentPropertyPath = parentDef.getPropertyPath();
+			PropertyDefinition parentPropertyDef = parentPropertyPath
+					.get(parentPropertyPath.size() - 1).getChild().asProperty();
+			if (parentPropertyDef != null) {
+				attributeMapping = mapping.getOrCreateAttributeMapping(parentPropertyPath);
+				// set targetAttribute if empty
+				if (attributeMapping.getTargetAttribute() == null
+						|| attributeMapping.getTargetAttribute().isEmpty()) {
+					attributeMapping.setTargetAttribute(mapping
+							.buildAttributeXPath(parentPropertyPath));
+				}
+
+				Namespace parentPropNS = mapping.getOrCreateNamespace(parentPropertyDef.getName()
+						.getNamespaceURI(), parentPropertyDef.getName().getPrefix());
+				Namespace targetPropNS = mapping.getOrCreateNamespace(targetPropertyDef.getName()
+						.getNamespaceURI(), targetPropertyDef.getName().getPrefix());
+				String unqualifiedName = targetPropertyDef.getName().getLocalPart();
+				boolean isQualified = !parentPropNS.getUri().equals(targetPropNS.getUri());
+
+				// encode attribute as <ClientProperty>
+				ClientProperty clientProperty = new ClientProperty();
+				String clientPropName = (isQualified) ? targetPropNS.getPrefix() + ":"
+						+ unqualifiedName : unqualifiedName;
+				clientProperty.setName(clientPropName);
+				clientProperty.setValue(getSourceExpressionAsCQL());
+
+				attributeMapping.getClientProperty().add(clientProperty);
+			}
+		}
+	}
+
+	protected void handleAsXmlElement() {
+		PropertyEntityDefinition targetPropertyEntityDef = targetProperty.getDefinition();
+		PropertyDefinition targetPropertyDef = targetPropertyEntityDef.getDefinition();
+		TypeDefinition targetPropertyType = targetPropertyDef.getPropertyType();
+
+		attributeMapping = mapping.getOrCreateAttributeMapping(targetPropertyEntityDef
+				.getPropertyPath());
+
+		if (isGeometryType(targetPropertyType)) {
+			handleXmlElementAsGeometryType();
+		}
+		else {
+			List<ChildContext> targetPropertyPath = targetPropertyEntityDef.getPropertyPath();
+			// set target attribute
+			attributeMapping.setTargetAttribute(mapping.buildAttributeXPath(targetPropertyPath));
+		}
+
+		// set source expression
+		AttributeExpressionMappingType sourceExpression = new AttributeExpressionMappingType();
+		// TODO: is this general enough?
+		sourceExpression.setOCQL(getSourceExpressionAsCQL());
+		attributeMapping.setSourceExpression(sourceExpression);
+		if (AppSchemaMappingUtils.isMultiple(targetPropertyDef)) {
+			attributeMapping.setIsMultiple(true);
+		}
+		// TODO: isList?
+		// TODO: targetAttributeNode?
+		// TODO: encodeIfEmpty?
+	}
+
+	protected void handleXmlElementAsGeometryType() {
+		PropertyEntityDefinition targetPropertyEntityDef = targetProperty.getDefinition();
+		TypeDefinition targetPropertyType = targetPropertyEntityDef.getDefinition()
+				.getPropertyType();
+
+		// GeometryTypes require special handling
+		QName geomTypeName = targetPropertyType.getName();
+		Namespace geomNS = mapping.getOrCreateNamespace(geomTypeName.getNamespaceURI(),
+				geomTypeName.getPrefix());
+		attributeMapping.setTargetAttributeNode(geomNS.getPrefix() + ":"
+				+ geomTypeName.getLocalPart());
+
+		// set target attribute to parent (should be gml:AbstractGeometry)
+		// TODO: this is really ugly, but I don't see a better way to do it
+		// since HALE renames
+		// {http://www.opengis.net/gml/3.2}AbstractGeometry element
+		// to
+		// {http://www.opengis.net/gml/3.2/AbstractGeometry}choice
+		EntityDefinition parentEntityDef = AlignmentUtil.getParent(targetPropertyEntityDef);
+		Definition<?> parentDef = parentEntityDef.getDefinition();
+		String parentQName = geomNS.getPrefix() + ":" + parentDef.getDisplayName();
+		List<ChildContext> targetPropertyPath = parentEntityDef.getPropertyPath();
+		attributeMapping.setTargetAttribute(mapping.buildAttributeXPath(targetPropertyPath) + "/"
+				+ parentQName);
 	}
 
 	protected static String getConditionalExpression(PropertyEntityDefinition propertyEntityDef,
@@ -203,9 +231,6 @@ public abstract class AbstractPropertyTransformationHandler implements
 
 		return cql;
 	}
-
-//	protected abstract AttributeMappingType handlePropertyTransformation(Cell propertyCell,
-//			FeatureTypeMapping featureTypeMapping, AppSchemaMappingContext context);
 
 	protected abstract String getSourceExpressionAsCQL();
 
