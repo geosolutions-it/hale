@@ -23,11 +23,16 @@
             name="App-Schema Config Archive"
             priority="normal">
       </content-type>
+      <content-type
+            id="eu.esdihumboldt.hale.io.appschema.rest"
+            name="App-Schema REST"
+            priority="normal">
+      </content-type>
    </extension>
    <extension
          point="eu.esdihumboldt.hale.io.provider">
       <provider
-            class="eu.esdihumboldt.hale.io.appschema.writer.AppSchemaAlignmentWriter"
+            class="eu.esdihumboldt.hale.io.appschema.writer.AppSchemaMappingFileWriter"
             id="eu.esdihumboldt.hale.io.appschema.writer"
             name="App-Schema Configuration">
          <contentType
@@ -35,6 +40,14 @@
          </contentType>
          <contentType
                ref="eu.esdihumboldt.hale.io.appschema.archive">
+         </contentType>
+      </provider>
+      <provider
+            class="eu.esdihumboldt.hale.io.appschema.writer.AppSchemaMappingUploader"
+            id="eu.esdihumboldt.hale.io.appschema.uploader"
+            name="App-Schema Configuration [Direct Upload]">
+         <contentType
+               ref="eu.esdihumboldt.hale.io.appschema.rest">
          </contentType>
       </provider>
    </extension>

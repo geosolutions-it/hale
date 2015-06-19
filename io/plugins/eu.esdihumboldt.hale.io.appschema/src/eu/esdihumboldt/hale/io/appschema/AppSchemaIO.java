@@ -36,6 +36,10 @@ public abstract class AppSchemaIO {
 	public static final String CONTENT_TYPE_MAPPING = "eu.esdihumboldt.hale.io.appschema.mapping";
 	public static final String CONTENT_TYPE_ARCHIVE = "eu.esdihumboldt.hale.io.appschema.archive";
 
+	public static final String PARAM_DATASTORE = "appschema.source.datastore";
+	public static final String PARAM_USER = "appschema.rest.user";
+	public static final String PARAM_PASSWORD = "appschema.rest.password";
+
 	public static final String MAPPING_TEMPLATE = "/template/mapping-template.xml";
 	public static final String NAMESPACE_TEMPLATE = "/template/namespace-template.xml";
 	public static final String WORKSPACE_TEMPLATE = "/template/workspace-template.xml";

@@ -1,6 +1,6 @@
 package eu.esdihumboldt.hale.io.appschema.ui;
 
-import eu.esdihumboldt.hale.io.appschema.writer.AppSchemaAlignmentWriter;
+import eu.esdihumboldt.hale.io.appschema.writer.AbstractAppSchemaConfigurator;
 import eu.esdihumboldt.hale.ui.io.ExportWizard;
 
 /**
@@ -9,10 +9,10 @@ import eu.esdihumboldt.hale.ui.io.ExportWizard;
  * 
  * @author stefano
  */
-public class AppSchemaAlignmentExportWizard extends ExportWizard<AppSchemaAlignmentWriter> {
+public class AppSchemaAlignmentExportWizard extends ExportWizard<AbstractAppSchemaConfigurator> {
 
 	public AppSchemaAlignmentExportWizard() {
-		super(AppSchemaAlignmentWriter.class);
+		super(AbstractAppSchemaConfigurator.class);
 	}
 
 	@Override

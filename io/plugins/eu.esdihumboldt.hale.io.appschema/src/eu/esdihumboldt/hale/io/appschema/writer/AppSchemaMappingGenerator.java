@@ -15,11 +15,15 @@
 
 package eu.esdihumboldt.hale.io.appschema.writer;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -30,6 +34,7 @@ import javax.xml.namespace.QName;
 import javax.xml.transform.stream.StreamSource;
 
 import org.geotools.app_schema.AppSchemaDataAccessType;
+import org.geotools.app_schema.NamespacesPropertyType.Namespace;
 import org.geotools.app_schema.ObjectFactory;
 import org.geotools.app_schema.SourceDataStoresPropertyType.DataStore;
 import org.geotools.app_schema.SourceDataStoresPropertyType.DataStore.Parameters.Parameter;
@@ -66,48 +71,197 @@ public class AppSchemaMappingGenerator {
 	private static final ALogger log = ALoggerFactory.getLogger(AppSchemaMappingGenerator.class);
 
 	private final Alignment alignment;
-	private final SchemaSpace targetSchema;
+	private final SchemaSpace targetSchemaSpace;
+	private final Schema targetSchema;
 	private final DataStore dataStore;
+	private AppSchemaMappingWrapper mappingWrapper;
 
-	public AppSchemaMappingGenerator(Alignment alignment, SchemaSpace targetSchema,
+	public AppSchemaMappingGenerator(Alignment alignment, SchemaSpace targetSchemaSpace,
 			DataStore dataStore) {
 		this.alignment = alignment;
-		this.targetSchema = targetSchema;
+		this.targetSchemaSpace = targetSchemaSpace;
+		// pick the target schemas from which interpolation variables will be
+		// derived
+		this.targetSchema = pickTargetSchema();
 		this.dataStore = dataStore;
 	}
 
-	public AppSchemaMappingWrapper generateMapping(IOReporter reporter) throws JAXBException {
+	public Schema getTargetSchema() {
+		return targetSchema;
+	}
+
+	public AppSchemaMappingWrapper generateMapping(IOReporter reporter) throws IOException {
 		AppSchemaDataAccessType mapping = loadMappingTemplate();
-		AppSchemaMappingWrapper wrapper = new AppSchemaMappingWrapper(mapping);
+		// reset wrapper
+		mappingWrapper = new AppSchemaMappingWrapper(mapping);
 
 		// create namespace objects for all target types / properties
 		// TODO: this removes all namespaces that were defined in the
 		// template file, remove it in production
 		mapping.getNamespaces().getNamespace().clear();
-		createNamespaces(wrapper);
+		createNamespaces();
 
 		// apply datastore configuration, if any
 		// TODO: for now, only a single datastore is supported
-		applyDataStoreConfig(wrapper);
+		applyDataStoreConfig();
 
 		// populate targetTypes element
-		createTargetTypes(wrapper);
+		createTargetTypes();
 
 		// populate typeMappings element
-		createTypeMappings(wrapper, reporter);
+		createTypeMappings(reporter);
 
-		return wrapper;
+		return mappingWrapper;
 	}
 
-	public void generateMapping(OutputStream output, IOReporter reporter) throws JAXBException {
-		AppSchemaMappingWrapper mappingWrapper = generateMapping(reporter);;
+	public void generateMapping(OutputStream output, IOReporter reporter) throws IOException {
+		generateMapping(reporter);
 
-		writeMappingConf(mappingWrapper.getAppSchemaMapping(), output);
+		writeMappingConf(output);
 	}
 
-	private void applyDataStoreConfig(AppSchemaMappingWrapper wrapper) {
+	public Map<String, String> getAppSchemaDataStore() {
+		checkMappingGenerated();
+		checkTargetSchemaAvailable();
+
+		Map<String, String> variables = new HashMap<String, String>();
+
+		Namespace ns = mappingWrapper.getOrCreateNamespace(targetSchema.getNamespace(), null);
+		variables.putAll(getWorkspaceInterpolationVariables(ns));
+
+		String dataStoreName = extractSchemaName(targetSchema.getLocation());
+		String dataStoreId = dataStoreName + "_datastore";
+		String mappingFileName = dataStoreName + ".xml";
+
+		variables.put("dataStoreId", dataStoreId);
+		variables.put("dataStoreName", dataStoreName);
+		variables.put("mappingFileName", mappingFileName);
+
+		return variables;
+	}
+
+	public Map<String, Map<String, String>> getSecondaryNamespaces() {
+		checkMappingGenerated();
+		checkTargetSchemaAvailable();
+
+		Map<String, Map<String, String>> secondaryNamespaces = new HashMap<String, Map<String, String>>();
+		for (Namespace ns : mappingWrapper.getAppSchemaMapping().getNamespaces().getNamespace()) {
+			if (!ns.getUri().equals(getTargetSchema().getNamespace())) {
+				Map<String, String> variables = getWorkspaceInterpolationVariables(ns);
+
+				secondaryNamespaces.put(variables.get("prefix"), variables);
+			}
+		}
+
+		return secondaryNamespaces;
+	}
+
+	private Map<String, String> getWorkspaceInterpolationVariables(Namespace ns) {
+		String prefix = ns.getPrefix();
+		String uri = ns.getUri();
+		String workspaceId = prefix + "_workspace";
+		String workspaceName = prefix;
+		String namespaceId = prefix + "_namespace";
+
+		Map<String, String> variables = new HashMap<String, String>();
+		variables.put("prefix", prefix);
+		variables.put("uri", uri);
+		variables.put("workspaceId", workspaceId);
+		variables.put("workspaceName", workspaceName);
+		variables.put("namespaceId", namespaceId);
+
+		return variables;
+	}
+
+	public Map<String, Map<String, String>> getFeatureTypes() {
+		checkMappingGenerated();
+
+		Map<String, Map<String, String>> featureTypes = new HashMap<String, Map<String, String>>();
+		for (FeatureTypeMapping ftMapping : mappingWrapper.getAppSchemaMapping().getTypeMappings()
+				.getFeatureTypeMapping()) {
+			Map<String, String> variables = getFeatureTypeInterpolationVariables(ftMapping);
+
+			featureTypes.put(variables.get("featureTypeName"), variables);
+		}
+
+		return featureTypes;
+	}
+
+	private Map<String, String> getFeatureTypeInterpolationVariables(FeatureTypeMapping ftMapping) {
+		String featureTypeName = stripPrefix(ftMapping.getTargetElement());
+		String featureTypeId = featureTypeName + "_featureType";
+		String layerName = featureTypeName;
+		String layerId = layerName + "_layer";
+
+		Map<String, String> variables = new HashMap<String, String>();
+		variables.put("featureTypeId", featureTypeId);
+		variables.put("featureTypeName", featureTypeName);
+		variables.put("layerId", layerId);
+		variables.put("layerName", layerName);
+
+		return variables;
+	}
+
+	private void checkMappingGenerated() {
+		if (mappingWrapper == null) {
+			throw new IllegalStateException("No mapping has been generated yet");
+		}
+	}
+
+	private void checkTargetSchemaAvailable() {
+		if (targetSchema == null) {
+			throw new IllegalStateException("Target schema not available");
+		}
+	}
+
+	private Schema pickTargetSchema() {
+		if (this.targetSchemaSpace == null) {
+			return null;
+		}
+
+		return this.targetSchemaSpace.getSchemas().iterator().next();
+	}
+
+	private String extractSchemaName(URI schemaLocation) {
+		String path = schemaLocation.getPath();
+		String fragment = schemaLocation.getFragment();
+		if (fragment != null && !fragment.isEmpty()) {
+			path = path.replace(fragment, "");
+		}
+		int lastSlashIdx = path.lastIndexOf('/');
+		int lastDotIdx = path.lastIndexOf('.');
+		if (lastSlashIdx >= 0) {
+			if (lastDotIdx >= 0) {
+				return path.substring(lastSlashIdx + 1, lastDotIdx);
+			}
+			else {
+				// no dot
+				return path.substring(lastSlashIdx + 1);
+			}
+		}
+		else {
+			// no slash, no dot
+			return path;
+		}
+	}
+
+	private String stripPrefix(String qualifiedName) {
+		if (qualifiedName == null) {
+			return null;
+		}
+
+		String[] prefixAndName = qualifiedName.split(":");
+		if (prefixAndName.length == 2) {
+			return prefixAndName[1];
+		}
+		else {
+			return null;
+		}
+	}
+
+	private void applyDataStoreConfig() {
 		if (dataStore != null && dataStore.getParameters() != null) {
-			DataStore targetDS = wrapper.getDefaultDataStore();
+			DataStore targetDS = mappingWrapper.getDefaultDataStore();
 
 			List<Parameter> inputParameters = dataStore.getParameters().getParameter();
 			List<Parameter> targetParameters = targetDS.getParameters().getParameter();
@@ -130,13 +284,13 @@ public class AppSchemaMappingGenerator {
 		}
 	}
 
-	private void createNamespaces(AppSchemaMappingWrapper wrapper) {
+	private void createNamespaces() {
 		Collection<? extends Cell> typeCells = alignment.getTypeCells();
 		for (Cell typeCell : typeCells) {
 			ListMultimap<String, ? extends Entity> targetEntities = typeCell.getTarget();
 			if (targetEntities != null) {
 				for (Entity entity : targetEntities.values()) {
-					createNamespaceForEntity(entity, wrapper);
+					createNamespaceForEntity(entity, mappingWrapper);
 				}
 			}
 
@@ -145,7 +299,7 @@ public class AppSchemaMappingGenerator {
 				Collection<? extends Entity> targetProperties = propCell.getTarget().values();
 				if (targetProperties != null) {
 					for (Entity property : targetProperties) {
-						createNamespaceForEntity(property, wrapper);
+						createNamespaceForEntity(property, mappingWrapper);
 					}
 				}
 			}
@@ -178,16 +332,16 @@ public class AppSchemaMappingGenerator {
 		}
 	}
 
-	private void createTargetTypes(AppSchemaMappingWrapper wrapper) {
-		Iterable<? extends Schema> targetSchemas = targetSchema.getSchemas();
+	private void createTargetTypes() {
+		Iterable<? extends Schema> targetSchemas = targetSchemaSpace.getSchemas();
 		if (targetSchemas != null) {
 			for (Schema targetSchema : targetSchemas) {
-				wrapper.addSchemaURI(targetSchema.getLocation().toString());
+				mappingWrapper.addSchemaURI(targetSchema.getLocation().toString());
 			}
 		}
 	}
 
-	private void createTypeMappings(AppSchemaMappingWrapper wrapper, IOReporter reporter) {
+	private void createTypeMappings(IOReporter reporter) {
 		Collection<? extends Cell> typeCells = alignment.getTypeCells();
 		for (Cell typeCell : typeCells) {
 			String typeTransformId = typeCell.getTransformationIdentifier();
@@ -197,7 +351,7 @@ public class AppSchemaMappingGenerator {
 				typeTransformHandler = TypeTransformationHandlerFactory.getInstance()
 						.createTypeTransformationHandler(typeTransformId);
 				FeatureTypeMapping ftMapping = typeTransformHandler.handleTypeTransformation(
-						alignment, typeCell, wrapper);
+						alignment, typeCell, mappingWrapper);
 
 				if (ftMapping != null) {
 					Collection<? extends Cell> propertyCells = alignment.getPropertyCells(typeCell);
@@ -210,7 +364,7 @@ public class AppSchemaMappingGenerator {
 									.getInstance().createPropertyTransformationHandler(
 											propertyTransformId);
 							propertyTransformHandler.handlePropertyTransformation(propertyCell,
-									wrapper);
+									mappingWrapper);
 						} catch (UnsupportedTransformationException e) {
 							String errMsg = MessageFormat.format(
 									"Error processing property cell{0}", propertyCell.getId());
@@ -232,32 +386,43 @@ public class AppSchemaMappingGenerator {
 		}
 	}
 
-	private AppSchemaDataAccessType loadMappingTemplate() throws JAXBException {
+	private AppSchemaDataAccessType loadMappingTemplate() throws IOException {
 		InputStream is = getClass().getResourceAsStream(AppSchemaIO.MAPPING_TEMPLATE);
 
-		JAXBContext context = createJaxbContext();
-		Unmarshaller unmarshaller = context.createUnmarshaller();
+		JAXBElement<AppSchemaDataAccessType> templateElement = null;
+		try {
+			JAXBContext context = createJaxbContext();
+			Unmarshaller unmarshaller = context.createUnmarshaller();
 
-		JAXBElement<AppSchemaDataAccessType> templateElement = unmarshaller.unmarshal(
-				new StreamSource(is), AppSchemaDataAccessType.class);
+			templateElement = unmarshaller.unmarshal(new StreamSource(is),
+					AppSchemaDataAccessType.class);
+		} catch (JAXBException e) {
+			throw new IOException(e);
+		}
 
 		return templateElement.getValue();
 	}
 
-	public static void writeMappingConf(AppSchemaDataAccessType mappingConf, OutputStream out)
-			throws JAXBException {
-		JAXBContext context = createJaxbContext();
+	public void writeMappingConf(OutputStream out) throws IOException {
+		checkMappingGenerated();
 
-		Marshaller marshaller = context.createMarshaller();
-		marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+		try {
+			JAXBContext context = createJaxbContext();
 
-		JAXBElement<AppSchemaDataAccessType> mappingConfElement = new ObjectFactory()
-				.createAppSchemaDataAccess(mappingConf);
+			Marshaller marshaller = context.createMarshaller();
+			marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
 
-		marshaller.marshal(mappingConfElement, out);
+			JAXBElement<AppSchemaDataAccessType> mappingConfElement = new ObjectFactory()
+					.createAppSchemaDataAccess(mappingWrapper.getAppSchemaMapping());
+
+			marshaller.marshal(mappingConfElement, out);
+		} catch (JAXBException e) {
+			throw new IOException(e);
+		}
+
 	}
 
-	private static JAXBContext createJaxbContext() throws JAXBException {
+	private JAXBContext createJaxbContext() throws JAXBException {
 		JAXBContext context = JAXBContext
 				.newInstance("net.opengis.gml:net.opengis.ogc:org.geotools.app_schema");
 

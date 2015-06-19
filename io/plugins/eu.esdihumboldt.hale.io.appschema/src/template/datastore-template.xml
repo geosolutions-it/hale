@@ -8,7 +8,7 @@
   <connectionParameters>
     <entry key="dbtype">app-schema</entry>
     <entry key="namespace">${uri}</entry>
-    <entry key="url">file:workspaces/${prefix}/${dataStoreName}/${mappingFileName}</entry>
+    <entry key="url">file:./${mappingFileName}</entry>
   </connectionParameters>
   <__default>false</__default>
 </dataStore>

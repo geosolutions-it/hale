@@ -15,7 +15,8 @@ import org.geotools.app_schema.SourceDataStoresPropertyType.DataStore.Parameters
 import org.geotools.app_schema.SourceDataStoresPropertyType.DataStore.Parameters.Parameter;
 
 import eu.esdihumboldt.hale.common.core.io.impl.ComplexValue;
-import eu.esdihumboldt.hale.io.appschema.writer.AppSchemaAlignmentWriter;
+import eu.esdihumboldt.hale.io.appschema.AppSchemaIO;
+import eu.esdihumboldt.hale.io.appschema.writer.AbstractAppSchemaConfigurator;
 import eu.esdihumboldt.hale.ui.io.config.AbstractConfigurationPage;
 
 /**
@@ -25,7 +26,7 @@ import eu.esdihumboldt.hale.ui.io.config.AbstractConfigurationPage;
  * @author stefano
  */
 public class AppSchemaDataStoreConfigurationPage extends
-		AbstractConfigurationPage<AppSchemaAlignmentWriter, AppSchemaAlignmentExportWizard> {
+		AbstractConfigurationPage<AbstractAppSchemaConfigurator, AppSchemaAlignmentExportWizard> {
 
 	private static final String DEFAULT_MESSAGE = " Specify PostGIS datastore parameters";
 	private static final Parameter DBTYPE_PARAMETER = new Parameter();
@@ -64,7 +65,7 @@ public class AppSchemaDataStoreConfigurationPage extends
 	}
 
 	@Override
-	public boolean updateConfiguration(AppSchemaAlignmentWriter provider) {
+	public boolean updateConfiguration(AbstractAppSchemaConfigurator provider) {
 		if (!validateHost()) {
 			updateMessage(Field.HOST);
 			return false;
@@ -74,8 +75,8 @@ public class AppSchemaDataStoreConfigurationPage extends
 			return false;
 		}
 
-		DataStore dataStoreParam = provider.getParameter(
-				AppSchemaAlignmentWriter.PARAMETER_DATASTORE).as(DataStore.class);
+		DataStore dataStoreParam = provider.getParameter(AppSchemaIO.PARAM_DATASTORE).as(
+				DataStore.class);
 		if (dataStoreParam == null) {
 			dataStoreParam = new DataStore();
 		}
@@ -125,8 +126,7 @@ public class AppSchemaDataStoreConfigurationPage extends
 		// TODO: only "postgis" dbtype is supported so far
 		dataStoreParam.getParameters().getParameter().add(DBTYPE_PARAMETER);
 
-		provider.setParameter(AppSchemaAlignmentWriter.PARAMETER_DATASTORE, new ComplexValue(
-				dataStoreParam));
+		provider.setParameter(AppSchemaIO.PARAM_DATASTORE, new ComplexValue(dataStoreParam));
 
 		return true;
 	}
