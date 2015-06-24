@@ -137,7 +137,8 @@ public abstract class AbstractPropertyTransformationHandler implements
 				Namespace targetPropNS = mapping.getOrCreateNamespace(targetPropertyDef.getName()
 						.getNamespaceURI(), targetPropertyDef.getName().getPrefix());
 				String unqualifiedName = targetPropertyDef.getName().getLocalPart();
-				boolean isQualified = !parentPropNS.getUri().equals(targetPropNS.getUri());
+				boolean isQualified = targetPropNS != null
+						&& !parentPropNS.getUri().equals(targetPropNS.getUri());
 
 				// encode attribute as <ClientProperty>
 				ClientProperty clientProperty = new ClientProperty();
