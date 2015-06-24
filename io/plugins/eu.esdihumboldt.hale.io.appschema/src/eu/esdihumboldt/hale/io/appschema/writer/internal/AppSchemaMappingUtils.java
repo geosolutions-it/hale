@@ -41,21 +41,66 @@ import eu.esdihumboldt.hale.io.xsd.constraint.XmlAttributeFlag;
  */
 public class AppSchemaMappingUtils {
 
-	public static final QName QNAME_GML_ID = new QName("http://www.opengis.net/gml/3.2", "id");
-	public static final QName QNAME_ABSTRACT_FEATURE_TYPE = new QName(
-			"http://www.opengis.net/gml/3.2", "AbstractFeatureType");
-	public static final QName QNAME_ABSTRACT_GEOMETRY_TYPE = new QName(
-			"http://www.opengis.net/gml/3.2", "AbstractGeometryType");
+	public static final String GML_BASE_NAMESPACE = "http://www.opengis.net/gml";
+	public static final String GML_ID = "id";
+	public static final String GML_ABSTRACT_FEATURE_TYPE = "AbstractFeatureType";
+	public static final String GML_ABSTRACT_GEOMETRY_TYPE = "AbstractGeometryType";
+
+//	public static final QName QNAME_GML_ID = new QName("http://www.opengis.net/gml/3.2", "id");
+//	public static final QName QNAME_ABSTRACT_FEATURE_TYPE = new QName(
+//			"http://www.opengis.net/gml/3.2", "AbstractFeatureType");
+//	public static final QName QNAME_ABSTRACT_GEOMETRY_TYPE = new QName(
+//			"http://www.opengis.net/gml/3.2", "AbstractGeometryType");
 	public static final QName QNAME_XLINK_XREF = new QName("http://www.w3.org/1999/xlink", "href");
 
 	public static boolean isGmlId(PropertyDefinition propertyDef) {
-		return propertyDef != null && propertyDef.getName().equals(QNAME_GML_ID);
+		// return propertyDef != null &&
+		// propertyDef.getName().equals(QNAME_GML_ID);
+		if (propertyDef == null) {
+			return false;
+		}
+
+		QName propertyName = propertyDef.getName();
+
+		return hasGmlNamespace(propertyName) && GML_ID.equals(propertyName.getLocalPart());
 	}
 
 	public static boolean isXmlAttribute(PropertyDefinition propertyDef) {
 		XmlAttributeFlag xmlAttrFlag = propertyDef.getConstraint(XmlAttributeFlag.class);
 
 		return xmlAttrFlag != null && xmlAttrFlag.isEnabled();
+	}
+
+	public static boolean isFeatureType(TypeDefinition typeDefinition) {
+		if (typeDefinition == null) {
+			return false;
+		}
+
+		QName typeName = typeDefinition.getName();
+		if (hasGmlNamespace(typeName) && GML_ABSTRACT_FEATURE_TYPE.equals(typeName.getLocalPart())) {
+			return true;
+		}
+		else {
+			return isFeatureType(typeDefinition.getSuperType());
+		}
+	}
+
+	public static boolean isGeometryType(TypeDefinition typeDefinition) {
+		if (typeDefinition == null) {
+			return false;
+		}
+
+		QName typeName = typeDefinition.getName();
+		if (hasGmlNamespace(typeName) && GML_ABSTRACT_GEOMETRY_TYPE.equals(typeName.getLocalPart())) {
+			return true;
+		}
+		else {
+			return isGeometryType(typeDefinition.getSuperType());
+		}
+	}
+
+	private static boolean hasGmlNamespace(QName qname) {
+		return qname.getNamespaceURI().startsWith(GML_BASE_NAMESPACE);
 	}
 
 	public static boolean isMultiple(PropertyDefinition targetPropertyDef) {
@@ -149,32 +194,6 @@ public class AppSchemaMappingUtils {
 		}
 
 		return null;
-	}
-
-	public static boolean isFeatureType(TypeDefinition typeDefinition) {
-		if (typeDefinition == null) {
-			return false;
-		}
-
-		if (typeDefinition.getName().equals(QNAME_ABSTRACT_FEATURE_TYPE)) {
-			return true;
-		}
-		else {
-			return isFeatureType(typeDefinition.getSuperType());
-		}
-	}
-
-	public static boolean isGeometryType(TypeDefinition typeDefinition) {
-		if (typeDefinition == null) {
-			return false;
-		}
-
-		if (typeDefinition.getName().equals(QNAME_ABSTRACT_GEOMETRY_TYPE)) {
-			return true;
-		}
-		else {
-			return isGeometryType(typeDefinition.getSuperType());
-		}
 	}
 
 	public static List<ChildContext> getContainerPropertyPath(List<ChildContext> propertyPath) {
