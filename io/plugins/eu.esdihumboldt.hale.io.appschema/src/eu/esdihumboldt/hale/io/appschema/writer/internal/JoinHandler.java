@@ -132,6 +132,8 @@ public class JoinHandler implements TypeTransformationHandler {
 						if (childFT != null) {
 							nestedFTPath = xrefContainerPath;
 							nestedFTMapping = context.getOrCreateFeatureTypeMapping(childFT);
+							nestedFTMapping.setSourceType(nestedType.getDefinition().getName()
+									.getLocalPart());
 
 							// TODO: I assume at most 2 FeatureTypes are
 							// involved in the join
