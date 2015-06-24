@@ -30,6 +30,7 @@ import javax.xml.namespace.QName;
 
 import org.geotools.app_schema.AppSchemaDataAccessType;
 import org.geotools.app_schema.AttributeMappingType;
+import org.geotools.app_schema.AttributeMappingType.ClientProperty;
 import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -88,15 +89,19 @@ public class AppSchemaMappingTest {
 	private static final String BASE_PREFIX = "base";
 	private static final String GML_NS = "http://www.opengis.net/gml/3.2";
 	private static final String GML_PREFIX = "gml";
+	private static final String XLINK_NS = "http://www.w3.org/1999/xlink";
+	private static final String XLINK_PREFIX = "xlink";
 
 	private static final String SOURCE_DATASET_ID = "dataset_id";
 	private static final String SOURCE_UNIT_ID = "unit_id";
 	private static final String SOURCE_UUID_V1 = "uuid_v1";
 	private static final String SOURCE_UCS2007 = "ucs2007";
 	private static final String SOURCE_UCS2013 = "ucs2013";
+	private static final String SOURCE_GEOM = "geom";
 	private static final String TARGET_LOCAL_ID = "lcv:inspireId/base:Identifier/base:localId";
 	private static final String TARGET_FIRST_OBSERVATION_DATE = "lcv:landCoverObservation[1]/lcv:LandCoverObservation/lcv:observationDate";
 	private static final String TARGET_DESCRIPTION = "gml:description";
+	private static final String TARGET_GEOMETRY = "lcv:geometry/gml:AbstractGeometry";
 
 	private static Schema source;
 	private static Schema target;
@@ -133,6 +138,7 @@ public class AppSchemaMappingTest {
 		mappingWrapper.getOrCreateNamespace(LANDCOVER_NS, LANDCOVER_PREFIX);
 		mappingWrapper.getOrCreateNamespace(BASE_NS, BASE_PREFIX);
 		mappingWrapper.getOrCreateNamespace(GML_NS, GML_PREFIX);
+		mappingWrapper.getOrCreateNamespace(XLINK_NS, XLINK_PREFIX);
 	}
 
 	private static Schema loadSchema(SchemaReader schemaReader, String resource) throws Exception {
@@ -171,38 +177,8 @@ public class AppSchemaMappingTest {
 	}
 
 	@Test
-	public void testJoinHandler() {
-		DefaultCell joinCell = new DefaultCell();
-		joinCell.setTransformationIdentifier(JoinFunction.ID);
-
-		TypeEntityDefinition datasetEntityDef = new TypeEntityDefinition(datasetType,
-				SchemaSpaceID.SOURCE, null);
-		TypeEntityDefinition landcoverEntityDef = new TypeEntityDefinition(landCoverType,
-				SchemaSpaceID.SOURCE, null);
-		ListMultimap<String, Type> source = ArrayListMultimap.create();
-		source.put(JoinFunction.JOIN_TYPES, new DefaultType(datasetEntityDef));
-		source.put(JoinFunction.JOIN_TYPES, new DefaultType(landcoverEntityDef));
-		assertEquals(2, source.get(JoinFunction.JOIN_TYPES).size());
-
-		ListMultimap<String, Type> target = ArrayListMultimap.create();
-		target.put(null, new DefaultType(new TypeEntityDefinition(landCoverDatasetType,
-				SchemaSpaceID.TARGET, null)));
-
-		PropertyEntityDefinition baseProperty = getDatasetIdSourceProperty().values().iterator()
-				.next().getDefinition();
-		PropertyEntityDefinition joinProperty = getLandCoverIdSourceProperty().values().iterator()
-				.next().getDefinition();
-		JoinCondition joinClause = new JoinCondition(baseProperty, joinProperty);
-		JoinParameter joinParam = new JoinParameter(Arrays.asList(datasetEntityDef,
-				landcoverEntityDef), Collections.singleton(joinClause));
-
-		ListMultimap<String, ParameterValue> parameters = ArrayListMultimap.create();
-		parameters
-				.put(JoinFunction.PARAMETER_JOIN, new ParameterValue(new ComplexValue(joinParam)));
-
-		joinCell.setSource(source);
-		joinCell.setTarget(target);
-		joinCell.setTransformationParameters(parameters);
+	public void testNestedJoinHandler() {
+		DefaultCell joinCell = buildJoinCell();
 
 		// create minimal alignment and pass it to JoinHandler
 		DefaultCell renameCell = new DefaultCell();
@@ -211,6 +187,7 @@ public class AppSchemaMappingTest {
 		renameCell.setTarget(getNestedLocalIdTargetProperty());
 
 		DefaultAlignment alignment = new DefaultAlignment();
+		alignment.addCell(joinCell);
 		alignment.addCell(renameCell);
 
 		JoinHandler handler = new JoinHandler();
@@ -249,12 +226,114 @@ public class AppSchemaMappingTest {
 		assertEquals("lcv:LandCoverUnit", containerMapping.getSourceExpression().getLinkElement());
 		assertEquals("FEATURE_LINK", containerMapping.getSourceExpression().getLinkField());
 		assertEquals(SOURCE_DATASET_ID, containerMapping.getSourceExpression().getOCQL());
+		assertTrue(containerMapping.isIsMultiple());
 
 		AttributeMappingType nestedMapping = lcuAttrMappings.get(0);
 		assertEquals("FEATURE_LINK", nestedMapping.getTargetAttribute());
 		assertEquals(SOURCE_DATASET_ID, nestedMapping.getSourceExpression().getOCQL());
 		assertNull(nestedMapping.getSourceExpression().getLinkElement());
 		assertNull(nestedMapping.getSourceExpression().getLinkField());
+	}
+
+	@Test
+	public void testXrefJoinHandler() {
+		DefaultCell joinCell = buildJoinCell();
+
+		// create minimal alignment and pass it to JoinHandler
+		DefaultCell renameCell = new DefaultCell();
+		renameCell.setTransformationIdentifier(RenameFunction.ID);
+		renameCell.setSource(getUnitIdSourceProperty());
+		renameCell.setTarget(getNestedHrefTargetProperty());
+
+		DefaultAlignment alignment = new DefaultAlignment();
+		alignment.addCell(joinCell);
+		alignment.addCell(renameCell);
+
+		JoinHandler handler = new JoinHandler();
+		handler.handleTypeTransformation(alignment, joinCell, mappingWrapper);
+		RenameHandler rename = new RenameHandler();
+		rename.handlePropertyTransformation(renameCell, mappingWrapper);
+
+		List<FeatureTypeMapping> ftMappings = mappingWrapper.getAppSchemaMapping()
+				.getTypeMappings().getFeatureTypeMapping();
+		assertEquals(2, ftMappings.size());
+
+		FeatureTypeMapping lcdMapping = null, lcuMapping = null;
+		for (FeatureTypeMapping ftMapping : ftMappings) {
+			if ("dataset_norm".equals(ftMapping.getSourceType())
+					&& "lcv:LandCoverDataset".equals(ftMapping.getTargetElement())) {
+				lcdMapping = ftMapping;
+			}
+			if ("landcover_norm".equals(ftMapping.getSourceType())
+					&& "lcv:LandCoverUnit".equals(ftMapping.getTargetElement())) {
+				lcuMapping = ftMapping;
+			}
+		}
+		assertNotNull(lcdMapping);
+		assertNotNull(lcuMapping);
+
+		// check feature chaining configuration
+		List<AttributeMappingType> lcdAttrMappings = lcdMapping.getAttributeMappings()
+				.getAttributeMapping();
+		List<AttributeMappingType> lcuAttrMappings = lcuMapping.getAttributeMappings()
+				.getAttributeMapping();
+		assertNotNull(lcdAttrMappings);
+		assertNotNull(lcuAttrMappings);
+		assertEquals(1, lcdAttrMappings.size());
+		assertEquals(1, lcuAttrMappings.size());
+
+		AttributeMappingType containerMapping = lcdAttrMappings.get(0);
+		assertEquals("lcv:member", containerMapping.getTargetAttribute());
+		assertEquals("lcv:LandCoverUnit", containerMapping.getSourceExpression().getLinkElement());
+		assertEquals("FEATURE_LINK", containerMapping.getSourceExpression().getLinkField());
+		assertEquals(SOURCE_DATASET_ID, containerMapping.getSourceExpression().getOCQL());
+		assertTrue(containerMapping.isIsMultiple());
+		assertNotNull(containerMapping.getClientProperty());
+		assertEquals(1, containerMapping.getClientProperty().size());
+		assertEquals("xlink:href", containerMapping.getClientProperty().get(0).getName());
+		assertEquals(SOURCE_UNIT_ID, containerMapping.getClientProperty().get(0).getValue());
+
+		AttributeMappingType nestedMapping = lcuAttrMappings.get(0);
+		assertEquals("FEATURE_LINK", nestedMapping.getTargetAttribute());
+		assertEquals(SOURCE_DATASET_ID, nestedMapping.getSourceExpression().getOCQL());
+		assertNull(nestedMapping.getSourceExpression().getLinkElement());
+		assertNull(nestedMapping.getSourceExpression().getLinkField());
+	}
+
+	private DefaultCell buildJoinCell() {
+		DefaultCell joinCell = new DefaultCell();
+		joinCell.setTransformationIdentifier(JoinFunction.ID);
+
+		TypeEntityDefinition datasetEntityDef = new TypeEntityDefinition(datasetType,
+				SchemaSpaceID.SOURCE, null);
+		TypeEntityDefinition landcoverEntityDef = new TypeEntityDefinition(landCoverType,
+				SchemaSpaceID.SOURCE, null);
+		ListMultimap<String, Type> source = ArrayListMultimap.create();
+		source.put(JoinFunction.JOIN_TYPES, new DefaultType(datasetEntityDef));
+		source.put(JoinFunction.JOIN_TYPES, new DefaultType(landcoverEntityDef));
+		assertEquals(2, source.get(JoinFunction.JOIN_TYPES).size());
+
+		ListMultimap<String, Type> target = ArrayListMultimap.create();
+		target.put(null, new DefaultType(new TypeEntityDefinition(landCoverDatasetType,
+				SchemaSpaceID.TARGET, null)));
+
+		PropertyEntityDefinition baseProperty = getDatasetIdSourceProperty().values().iterator()
+				.next().getDefinition();
+		PropertyEntityDefinition joinProperty = getLandCoverIdSourceProperty().values().iterator()
+				.next().getDefinition();
+		JoinCondition joinClause = new JoinCondition(baseProperty, joinProperty);
+		JoinParameter joinParam = new JoinParameter(Arrays.asList(datasetEntityDef,
+				landcoverEntityDef), Collections.singleton(joinClause));
+
+		ListMultimap<String, ParameterValue> parameters = ArrayListMultimap.create();
+		parameters
+				.put(JoinFunction.PARAMETER_JOIN, new ParameterValue(new ComplexValue(joinParam)));
+
+		joinCell.setSource(source);
+		joinCell.setTarget(target);
+		joinCell.setTransformationParameters(parameters);
+
+		return joinCell;
 	}
 
 	@Test
@@ -381,6 +460,64 @@ public class AppSchemaMappingTest {
 		assertEquals(TARGET_LOCAL_ID, attrMapping.getTargetAttribute());
 	}
 
+	@Test
+	public void testGeometryEncoding() {
+		DefaultCell cell = new DefaultCell();
+		cell.setTransformationIdentifier(RenameFunction.ID);
+
+		cell.setSource(getGeomSourceProperty());
+		cell.setTarget(getGeometryTargetProperty());
+
+		RenameHandler renameHandler = new RenameHandler();
+		AttributeMappingType attrMapping = renameHandler.handlePropertyTransformation(cell,
+				mappingWrapper);
+		assertEquals(SOURCE_GEOM, attrMapping.getSourceExpression().getOCQL());
+		assertEquals(TARGET_GEOMETRY, attrMapping.getTargetAttribute());
+		assertEquals("gml:MultiSurfaceType", attrMapping.getTargetAttributeNode());
+	}
+
+	@Test
+	public void testGmlIdEncoding() {
+		DefaultCell cell = new DefaultCell();
+		cell.setTransformationIdentifier(RenameFunction.ID);
+
+		cell.setSource(getUnitIdSourceProperty());
+		cell.setTarget(getGmlIdTargetProperty());
+
+		RenameHandler renameHandler = new RenameHandler();
+		AttributeMappingType attrMapping = renameHandler.handlePropertyTransformation(cell,
+				mappingWrapper);
+		assertNull(attrMapping.getSourceExpression());
+		assertEquals(SOURCE_UNIT_ID, attrMapping.getIdExpression().getOCQL());
+		assertEquals("lcv:LandCoverUnit", attrMapping.getTargetAttribute());
+	}
+
+	@Test
+	public void testXmlAttributeEncoding() {
+		final String CODE_SPACE = "http://www.example.com/codespace";
+		final String OCQL = "'" + CODE_SPACE + "'";
+
+		DefaultCell cell = new DefaultCell();
+		cell.setTransformationIdentifier(AssignFunction.ID);
+
+		ListMultimap<String, ParameterValue> parameters = ArrayListMultimap.create();
+		parameters.put(AssignFunction.PARAMETER_VALUE, new ParameterValue(CODE_SPACE));
+		cell.setTransformationParameters(parameters);
+
+		cell.setTarget(getCodeSpaceTargetProperty());
+
+		AssignHandler handler = new AssignHandler();
+		AttributeMappingType attrMapping = handler.handlePropertyTransformation(cell,
+				mappingWrapper);
+		assertNull(attrMapping.getSourceExpression());
+		assertEquals("gml:name", attrMapping.getTargetAttribute());
+		assertNotNull(attrMapping.getClientProperty());
+		assertEquals(1, attrMapping.getClientProperty().size());
+		ClientProperty attr = attrMapping.getClientProperty().get(0);
+		assertEquals("codeSpace", attr.getName());
+		assertEquals(OCQL, attr.getValue());
+	}
+
 	private ListMultimap<String, Property> getDatasetIdSourceProperty() {
 		ChildDefinition<?> childDef = DefinitionUtil.getChild(datasetType, new QName(
 				SOURCE_DATASET_ID));
@@ -424,6 +561,14 @@ public class AppSchemaMappingTest {
 	private ListMultimap<String, Property> getUcs2013SourceProperty() {
 		ChildDefinition<?> childDef = DefinitionUtil.getChild(landCoverType, new QName(
 				SOURCE_UCS2013));
+		assertNotNull(childDef);
+
+		return createSourceProperty(landCoverType, childDef);
+	}
+
+	private ListMultimap<String, Property> getGeomSourceProperty() {
+		ChildDefinition<?> childDef = DefinitionUtil
+				.getChild(landCoverType, new QName(SOURCE_GEOM));
 		assertNotNull(childDef);
 
 		return createSourceProperty(landCoverType, childDef);
@@ -476,6 +621,17 @@ public class AppSchemaMappingTest {
 				inspireIdChildDef, identifierChildDef, localIdChildDef));
 	}
 
+	private ListMultimap<String, Property> getNestedHrefTargetProperty() {
+		ChildDefinition<?> memberChildDef = DefinitionUtil.getChild(landCoverDatasetType,
+				new QName(LANDCOVER_NS, "member"));
+		assertNotNull(memberChildDef);
+		ChildDefinition<?> hrefChildDef = DefinitionUtil.getChild(memberChildDef, new QName(
+				XLINK_NS, "href"));
+		assertNotNull(hrefChildDef);
+
+		return createNestedTargetProperty(Arrays.asList(memberChildDef, hrefChildDef));
+	}
+
 	private ListMultimap<String, Property> getFirstObservationDateTargetProperty() {
 		ChildDefinition<?> lcvObsChildDef = DefinitionUtil.getChild(landCoverUnitType, new QName(
 				LANDCOVER_NS, "landCoverObservation"));
@@ -500,6 +656,45 @@ public class AppSchemaMappingTest {
 
 		List<ChildDefinition<?>> childDefs = new ArrayList<ChildDefinition<?>>();
 		childDefs.add(descriptionChildDef);
+
+		return createTargetProperty(childDefs);
+	}
+
+	private ListMultimap<String, Property> getGeometryTargetProperty() {
+		ChildDefinition<?> geometryChildDef = DefinitionUtil.getChild(landCoverUnitType, new QName(
+				LANDCOVER_NS, "geometry"));
+		ChildDefinition<?> abstractGeometryChildDef = DefinitionUtil.getChild(geometryChildDef,
+				new QName("http://www.opengis.net/gml/3.2/AbstractGeometry", "choice"));
+		ChildDefinition<?> multiSurfaceChildDef = DefinitionUtil.getChild(abstractGeometryChildDef,
+				new QName(GML_NS, "MultiSurface"));
+
+		List<ChildDefinition<?>> childDefs = new ArrayList<ChildDefinition<?>>();
+		childDefs.add(geometryChildDef);
+		childDefs.add(abstractGeometryChildDef);
+		childDefs.add(multiSurfaceChildDef);
+
+		return createTargetProperty(childDefs);
+	}
+
+	private ListMultimap<String, Property> getGmlIdTargetProperty() {
+		ChildDefinition<?> gmlIdChildDef = DefinitionUtil.getChild(landCoverUnitType, new QName(
+				GML_NS, "id"));
+
+		List<ChildDefinition<?>> childDefs = new ArrayList<ChildDefinition<?>>();
+		childDefs.add(gmlIdChildDef);
+
+		return createTargetProperty(childDefs);
+	}
+
+	private ListMultimap<String, Property> getCodeSpaceTargetProperty() {
+		ChildDefinition<?> nameChildDef = DefinitionUtil.getChild(landCoverUnitType, new QName(
+				GML_NS, "name"));
+		ChildDefinition<?> codeSpaceChildDef = DefinitionUtil.getChild(nameChildDef, new QName(
+				"codeSpace"));
+
+		List<ChildDefinition<?>> childDefs = new ArrayList<ChildDefinition<?>>();
+		childDefs.add(nameChildDef);
+		childDefs.add(codeSpaceChildDef);
 
 		return createTargetProperty(childDefs);
 	}
