@@ -21,6 +21,8 @@ import java.util.Arrays;
 
 import com.google.common.base.Joiner;
 
+import eu.esdihumboldt.hale.io.geoserver.DataStore;
+
 /**
  * TODO Type description
  * 

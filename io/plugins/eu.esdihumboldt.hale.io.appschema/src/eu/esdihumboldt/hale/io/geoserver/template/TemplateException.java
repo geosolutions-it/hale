@@ -13,25 +13,27 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.geoserver.rest;
+package eu.esdihumboldt.hale.io.geoserver.template;
+
+import java.io.IOException;
 
 /**
  * TODO Type description
  * 
  * @author stefano
  */
-public class AppSchemaDataStore extends DataStore {
+public class TemplateException extends IOException {
 
-	public AppSchemaDataStore(String name) {
-		super(name);
+	public TemplateException(String message) {
+		super(message);
 	}
 
-	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.AbstractResource#templateLocation()
-	 */
-	@Override
-	protected String templateLocation() {
-		return "/template/datastore-appschema-template.vm";
+	public TemplateException(Throwable cause) {
+		super(cause);
+	}
+
+	public TemplateException(String message, Throwable cause) {
+		super(message, cause);
 	}
 
 }

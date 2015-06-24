@@ -13,7 +13,7 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.geoserver.rest;
+package eu.esdihumboldt.hale.io.geoserver;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,6 +29,8 @@ public class Namespace extends AbstractResource {
 	public static final String ID = "namespaceId";
 	public static final String PREFIX = "prefix";
 	public static final String URI = "uri";
+
+	private static final String TEMPLATE_LOCATION = "/eu/esdihumboldt/hale/io/geoserver/template/data/namespace-template.vm";
 
 	private static final Set<String> allowedAttributes = new HashSet<String>();
 
@@ -46,7 +48,7 @@ public class Namespace extends AbstractResource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#name()
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#name()
 	 */
 	@Override
 	public String name() {
@@ -54,7 +56,7 @@ public class Namespace extends AbstractResource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.AbstractResource#allowedAttributes()
+	 * @see eu.esdihumboldt.hale.io.geoserver.AbstractResource#allowedAttributes()
 	 */
 	@Override
 	protected Set<String> allowedAttributes() {
@@ -62,11 +64,11 @@ public class Namespace extends AbstractResource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.AbstractResource#templateLocation()
+	 * @see eu.esdihumboldt.hale.io.geoserver.AbstractResource#templateLocation()
 	 */
 	@Override
 	protected String templateLocation() {
-		return "/template/namespace-template.vm";
+		return TEMPLATE_LOCATION;
 	}
 
 }

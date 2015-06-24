@@ -13,33 +13,25 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.geoserver.rest;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import org.apache.http.entity.ContentType;
+package eu.esdihumboldt.hale.io.geoserver;
 
 /**
  * TODO Type description
  * 
  * @author stefano
  */
-public interface Resource {
+public class AppSchemaDataStore extends DataStore {
 
-	public String name();
+	public AppSchemaDataStore(String name) {
+		super(name);
+	}
 
-	public ContentType contentType();
-
-	public Object getAttribute(String name);
-
-	public void setAttribute(String name, String value);
-
-	public void print(OutputStream out) throws IOException;
-
-	public InputStream asStream() throws IOException;
-
-	public byte[] asByteArray() throws IOException;
+	/**
+	 * @see eu.esdihumboldt.hale.io.geoserver.AbstractResource#templateLocation()
+	 */
+	@Override
+	protected String templateLocation() {
+		return "/eu/esdihumboldt/hale/io/geoserver/template/data/datastore-appschema-template.vm";
+	}
 
 }

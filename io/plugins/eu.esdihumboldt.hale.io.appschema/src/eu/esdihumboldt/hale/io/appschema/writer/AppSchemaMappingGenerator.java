@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +61,11 @@ import eu.esdihumboldt.hale.io.appschema.writer.internal.PropertyTransformationH
 import eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandler;
 import eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandlerFactory;
 import eu.esdihumboldt.hale.io.appschema.writer.internal.UnsupportedTransformationException;
+import eu.esdihumboldt.hale.io.geoserver.AppSchemaDataStore;
+import eu.esdihumboldt.hale.io.geoserver.FeatureType;
+import eu.esdihumboldt.hale.io.geoserver.Layer;
+import eu.esdihumboldt.hale.io.geoserver.ResourceBuilder;
+import eu.esdihumboldt.hale.io.geoserver.Workspace;
 
 /**
  * TODO Type description
@@ -120,86 +126,117 @@ public class AppSchemaMappingGenerator {
 		writeMappingConf(output);
 	}
 
-	public Map<String, String> getAppSchemaDataStore() {
+	public eu.esdihumboldt.hale.io.geoserver.DataStore getAppSchemaDataStoreREST() {
 		checkMappingGenerated();
 		checkTargetSchemaAvailable();
 
-		Map<String, String> variables = new HashMap<String, String>();
+		eu.esdihumboldt.hale.io.geoserver.Namespace ns = getMainNamespace();
+		Workspace ws = getMainWorkspace();
 
-		Namespace ns = mappingWrapper.getOrCreateNamespace(targetSchema.getNamespace(), null);
-		variables.putAll(getWorkspaceInterpolationVariables(ns));
-
+		String workspaceId = (String) ws.getAttribute(Workspace.ID);
 		String dataStoreName = extractSchemaName(targetSchema.getLocation());
 		String dataStoreId = dataStoreName + "_datastore";
 		String mappingFileName = dataStoreName + ".xml";
+		Map<String, String> connectionParameters = new HashMap<String, String>();
+		connectionParameters.put("uri",
+				(String) ns.getAttribute(eu.esdihumboldt.hale.io.geoserver.Namespace.URI));
+		connectionParameters.put("workspaceName", ws.name());
+		connectionParameters.put("mappingFileName", mappingFileName);
 
-		variables.put("dataStoreId", dataStoreId);
-		variables.put("dataStoreName", dataStoreName);
-		variables.put("mappingFileName", mappingFileName);
-
-		return variables;
+		return ResourceBuilder
+				.dataStore(dataStoreName, AppSchemaDataStore.class)
+				.setAttribute(eu.esdihumboldt.hale.io.geoserver.DataStore.ID, dataStoreId)
+				.setAttribute(eu.esdihumboldt.hale.io.geoserver.DataStore.WORKSPACE_ID, workspaceId)
+				.setAttribute(eu.esdihumboldt.hale.io.geoserver.DataStore.CONNECTION_PARAMS,
+						connectionParameters).build();
 	}
 
-	public Map<String, Map<String, String>> getSecondaryNamespaces() {
+	public Workspace getMainWorkspace() {
+		checkTargetSchemaAvailable();
+
+		Namespace ns = mappingWrapper.getOrCreateNamespace(targetSchema.getNamespace(), null);
+		return getWorkspace(ns.getPrefix());
+	}
+
+	public eu.esdihumboldt.hale.io.geoserver.Namespace getMainNamespace() {
+		checkTargetSchemaAvailable();
+
+		Namespace ns = mappingWrapper.getOrCreateNamespace(targetSchema.getNamespace(), null);
+		return getNamespace(ns);
+	}
+
+	public List<eu.esdihumboldt.hale.io.geoserver.Namespace> getSecondaryNamespaces() {
 		checkMappingGenerated();
 		checkTargetSchemaAvailable();
 
-		Map<String, Map<String, String>> secondaryNamespaces = new HashMap<String, Map<String, String>>();
+		List<eu.esdihumboldt.hale.io.geoserver.Namespace> secondaryNamespaces = new ArrayList<eu.esdihumboldt.hale.io.geoserver.Namespace>();
 		for (Namespace ns : mappingWrapper.getAppSchemaMapping().getNamespaces().getNamespace()) {
 			if (!ns.getUri().equals(getTargetSchema().getNamespace())) {
-				Map<String, String> variables = getWorkspaceInterpolationVariables(ns);
-
-				secondaryNamespaces.put(variables.get("prefix"), variables);
+				secondaryNamespaces.add(getNamespace(ns));
 			}
 		}
 
 		return secondaryNamespaces;
 	}
 
-	private Map<String, String> getWorkspaceInterpolationVariables(Namespace ns) {
-		String prefix = ns.getPrefix();
-		String uri = ns.getUri();
-		String workspaceId = prefix + "_workspace";
-		String workspaceName = prefix;
-		String namespaceId = prefix + "_namespace";
-
-		Map<String, String> variables = new HashMap<String, String>();
-		variables.put("prefix", prefix);
-		variables.put("uri", uri);
-		variables.put("workspaceId", workspaceId);
-		variables.put("workspaceName", workspaceName);
-		variables.put("namespaceId", namespaceId);
-
-		return variables;
+	public Workspace getWorkspace(eu.esdihumboldt.hale.io.geoserver.Namespace ns) {
+		return getWorkspace(ns.name());
 	}
 
-	public Map<String, Map<String, String>> getFeatureTypes() {
+	private eu.esdihumboldt.hale.io.geoserver.Namespace getNamespace(Namespace ns) {
+		String prefix = ns.getPrefix();
+		String uri = ns.getUri();
+		String namespaceId = prefix + "_namespace";
+
+		return ResourceBuilder.namespace(prefix)
+				.setAttribute(eu.esdihumboldt.hale.io.geoserver.Namespace.ID, namespaceId)
+				.setAttribute(eu.esdihumboldt.hale.io.geoserver.Namespace.URI, uri).build();
+	}
+
+	private Workspace getWorkspace(String nsPrefix) {
+		String workspaceId = nsPrefix + "_workspace";
+		String workspaceName = nsPrefix;
+
+		return ResourceBuilder.workspace(workspaceName).setAttribute(Workspace.ID, workspaceId)
+				.build();
+	}
+
+	public List<FeatureType> getFeatureTypes(eu.esdihumboldt.hale.io.geoserver.DataStore dataStore) {
 		checkMappingGenerated();
 
-		Map<String, Map<String, String>> featureTypes = new HashMap<String, Map<String, String>>();
+		List<FeatureType> featureTypes = new ArrayList<FeatureType>();
 		for (FeatureTypeMapping ftMapping : mappingWrapper.getAppSchemaMapping().getTypeMappings()
 				.getFeatureTypeMapping()) {
-			Map<String, String> variables = getFeatureTypeInterpolationVariables(ftMapping);
-
-			featureTypes.put(variables.get("featureTypeName"), variables);
+			featureTypes.add(getFeatureType(dataStore, ftMapping));
 		}
 
 		return featureTypes;
 	}
 
-	private Map<String, String> getFeatureTypeInterpolationVariables(FeatureTypeMapping ftMapping) {
+	public FeatureType getFeatureType(eu.esdihumboldt.hale.io.geoserver.DataStore dataStore,
+			FeatureTypeMapping ftMapping) {
 		String featureTypeName = stripPrefix(ftMapping.getTargetElement());
 		String featureTypeId = featureTypeName + "_featureType";
+		String dataStoreId = (String) dataStore
+				.getAttribute(eu.esdihumboldt.hale.io.geoserver.DataStore.ID);
+		eu.esdihumboldt.hale.io.geoserver.Namespace ns = getMainNamespace();
+
+		return ResourceBuilder
+				.featureType(featureTypeName)
+				.setAttribute(FeatureType.ID, featureTypeId)
+				.setAttribute(FeatureType.DATASTORE_ID, dataStoreId)
+				.setAttribute(FeatureType.NAMESPACE_ID,
+						ns.getAttribute(eu.esdihumboldt.hale.io.geoserver.Namespace.ID)).build();
+	}
+
+	public Layer getLayer(FeatureType featureType) {
+		String featureTypeName = featureType.name();
+		String featureTypeId = (String) featureType.getAttribute(FeatureType.ID);
 		String layerName = featureTypeName;
 		String layerId = layerName + "_layer";
 
-		Map<String, String> variables = new HashMap<String, String>();
-		variables.put("featureTypeId", featureTypeId);
-		variables.put("featureTypeName", featureTypeName);
-		variables.put("layerId", layerId);
-		variables.put("layerName", layerName);
-
-		return variables;
+		return ResourceBuilder.layer(layerName).setAttribute(Layer.ID, layerId)
+				.setAttribute(Layer.FEATURE_TYPE_ID, featureTypeId).build();
 	}
 
 	private void checkMappingGenerated() {

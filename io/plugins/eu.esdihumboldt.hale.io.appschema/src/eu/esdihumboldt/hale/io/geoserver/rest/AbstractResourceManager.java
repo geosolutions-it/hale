@@ -41,11 +41,14 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 import com.google.common.base.Joiner;
+
+import eu.esdihumboldt.hale.io.geoserver.Resource;
 
 /**
  * TODO Type description
@@ -99,7 +102,7 @@ public abstract class AbstractResourceManager<T extends Resource> implements Res
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.ResourceManager#setResource(eu.esdihumboldt.hale.io.geoserver.rest.Resource)
+	 * @see eu.esdihumboldt.hale.io.geoserver.rest.ResourceManager#setResource(eu.esdihumboldt.hale.io.geoserver.Resource)
 	 */
 	@Override
 	public void setResource(T resource) {
@@ -185,30 +188,32 @@ public abstract class AbstractResourceManager<T extends Resource> implements Res
 		try {
 			String url = getResourceListURL();
 			String queryString = buildQueryString(parameters);
-			return executor.execute(
-					Request.Post(url + queryString).bodyStream(resource.asStream(),
-							resource.contentType())).handleResponse(new ResponseHandler<URL>() {
+			ByteArrayEntity entity = new ByteArrayEntity(resource.asByteArray());
+			entity.setContentType(resource.contentType().getMimeType());
 
-				/**
-				 * @see org.apache.http.client.ResponseHandler#handleResponse(org.apache.http.HttpResponse)
-				 */
-				@Override
-				public URL handleResponse(HttpResponse response) throws ClientProtocolException,
-						IOException {
-					StatusLine statusLine = response.getStatusLine();
-					if (statusLine.getStatusCode() >= 300) {
-						throw new HttpResponseException(statusLine.getStatusCode(), statusLine
-								.getReasonPhrase());
-					}
-					if (statusLine.getStatusCode() == 201) {
-						Header locationHeader = response.getFirstHeader("Location");
-						if (locationHeader != null) {
-							return new URL(locationHeader.getValue());
+			return executor.execute(Request.Post(url + queryString).body(entity)).handleResponse(
+					new ResponseHandler<URL>() {
+
+						/**
+						 * @see org.apache.http.client.ResponseHandler#handleResponse(org.apache.http.HttpResponse)
+						 */
+						@Override
+						public URL handleResponse(HttpResponse response)
+								throws ClientProtocolException, IOException {
+							StatusLine statusLine = response.getStatusLine();
+							if (statusLine.getStatusCode() >= 300) {
+								throw new HttpResponseException(statusLine.getStatusCode(),
+										statusLine.getReasonPhrase());
+							}
+							if (statusLine.getStatusCode() == 201) {
+								Header locationHeader = response.getFirstHeader("Location");
+								if (locationHeader != null) {
+									return new URL(locationHeader.getValue());
+								}
+							}
+							return null;
 						}
-					}
-					return null;
-				}
-			});
+					});
 		} catch (Exception e) {
 			throw new ResourceException(e);
 		}
@@ -232,8 +237,11 @@ public abstract class AbstractResourceManager<T extends Resource> implements Res
 		try {
 			String url = getResourceURL();
 			String queryString = buildQueryString(parameters);
-			executor.execute(Request.Put(url + queryString).bodyByteArray(resource.asByteArray()))
-					.handleResponse(new EmptyResponseHandler());
+			ByteArrayEntity entity = new ByteArrayEntity(resource.asByteArray());
+			entity.setContentType(resource.contentType().getMimeType());
+
+			executor.execute(Request.Put(url + queryString).body(entity)).handleResponse(
+					new EmptyResponseHandler());
 		} catch (Exception e) {
 			throw new ResourceException(e);
 		}

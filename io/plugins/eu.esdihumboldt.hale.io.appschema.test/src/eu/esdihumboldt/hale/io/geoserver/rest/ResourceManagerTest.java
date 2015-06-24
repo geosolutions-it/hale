@@ -25,13 +25,17 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import eu.esdihumboldt.hale.io.geoserver.rest.DataStoreFile.Extension;
+import eu.esdihumboldt.hale.io.geoserver.AppSchemaDataStore;
+import eu.esdihumboldt.hale.io.geoserver.DataStore;
+import eu.esdihumboldt.hale.io.geoserver.DataStoreFile;
+import eu.esdihumboldt.hale.io.geoserver.DataStoreFile.Extension;
+import eu.esdihumboldt.hale.io.geoserver.Namespace;
+import eu.esdihumboldt.hale.io.geoserver.ResourceBuilder;
 
 /**
  * TODO Type description
@@ -51,27 +55,15 @@ public class ResourceManagerTest {
 
 	public static final String APP_SCHEMA_MAPPING_FILE = "/data/LandCoverVector.xml";
 	public static final String APP_SCHEMA_DATASTORE = "LandCoverVector";
-	public static final String APP_SCHEMA_WORKSPACE = "lcv";
+	public static final String APP_SCHEMA_WORKSPACE = "hale_lcv";
 	public static final String APP_SCHEMA_URI = "http://inspire.ec.europa.eu/schemas/lcv/3.0";
 
 	@Test
-	@Ignore
+//	@Ignore("Requires a live GeoServer instance to run")
 	public void testNamespaceManager() throws Exception {
 
-		Namespace ns = ResourceBuilder.namespace(NAMESPACE_PREFIX)
-				.setAttribute(Namespace.URI, NAMESPACE_URI).build();
 		NamespaceManager nsMgr = new NamespaceManager(GEOSERVER_URL);
-
-		nsMgr.setCredentials(GEOSERVER_USER, GEOSERVER_PASSWORD);
-		nsMgr.setResource(ns);
-
-		assertFalse(nsMgr.exists());
-
-		// create namespace
-		URL nsURL = nsMgr.create();
-		assertNotNull(nsURL);
-
-		assertTrue(nsMgr.exists());
+		Namespace ns = createNamespace(nsMgr, NAMESPACE_PREFIX, NAMESPACE_URI);
 
 		// check namespace was created correctly
 		Document nsDoc = nsMgr.read();
@@ -100,15 +92,33 @@ public class ResourceManagerTest {
 	}
 
 	@Test
-	@Ignore
+//	@Ignore("Requires a live GeoServer instance to run")
 	public void testDataStoreManager() throws Exception {
 
-		DataStore ds = ResourceBuilder.dataStore(APP_SCHEMA_DATASTORE, AppSchemaDataStore.class)
-				.build();
-		DataStoreManager dsMgr = new DataStoreManager(GEOSERVER_URL);
+		NamespaceManager nsMgr = new NamespaceManager(GEOSERVER_URL);
+		Namespace ns = createNamespace(nsMgr, APP_SCHEMA_WORKSPACE, APP_SCHEMA_URI);
 
+		Map<String, String> connectionsParams = new HashMap<String, String>();
+		connectionsParams.put("uri", APP_SCHEMA_URI);
+		connectionsParams.put("workspaceName", ns.name());
+		connectionsParams.put("mappingFileName", "mapping.xml");
+		DataStore ds = ResourceBuilder.dataStore(APP_SCHEMA_DATASTORE, AppSchemaDataStore.class)
+				.setAttribute(DataStore.CONNECTION_PARAMS, connectionsParams).build();
+
+		DataStoreManager dsMgr = new DataStoreManager(GEOSERVER_URL);
 		dsMgr.setCredentials(GEOSERVER_USER, GEOSERVER_PASSWORD);
 		dsMgr.setWorkspace(APP_SCHEMA_WORKSPACE);
+		dsMgr.setResource(ds);
+
+		if (dsMgr.exists()) {
+			dsMgr.delete();
+		}
+
+		assertFalse(dsMgr.exists());
+		// create datastore
+		URL url = dsMgr.create();
+		assertNotNull(url);
+		assertTrue(dsMgr.exists());
 
 		Document listDoc = dsMgr.list();
 		assertEquals("dataStores", listDoc.getDocumentElement().getNodeName());
@@ -125,33 +135,23 @@ public class ResourceManagerTest {
 			}
 		}
 
-		dsMgr.setResource(ds);
-
 		Map<String, String> deleteParams = new HashMap<String, String>();
 		deleteParams.put("recurse", "true");
 		dsMgr.delete(deleteParams);
-
 		assertFalse(dsMgr.exists());
+
+		// delete namespace
+		nsMgr.delete();
+		assertFalse(nsMgr.exists());
 
 	}
 
 	@Test
-//	@Ignore
+//	@Ignore("Requires a live GeoServer instance to run")
 	public void testDataStoreFileManager() throws Exception {
 
-		Namespace ns = ResourceBuilder.namespace(APP_SCHEMA_WORKSPACE)
-				.setAttribute(Namespace.URI, APP_SCHEMA_URI).build();
 		NamespaceManager nsMgr = new NamespaceManager(GEOSERVER_URL);
-
-		nsMgr.setCredentials(GEOSERVER_USER, GEOSERVER_PASSWORD);
-		nsMgr.setResource(ns);
-
-		assertTrue(nsMgr.exists());
-
-		// create namespace
-//		URL nsURL = nsMgr.create();
-//		assertNotNull(nsURL);
-//		assertTrue(nsMgr.exists());
+		Namespace ns = createNamespace(nsMgr, APP_SCHEMA_WORKSPACE, APP_SCHEMA_URI);
 
 		InputStream resourceStream = getClass().getResourceAsStream(APP_SCHEMA_MAPPING_FILE);
 		assertNotNull(resourceStream);
@@ -169,5 +169,42 @@ public class ResourceManagerTest {
 		dsFileMgr.update(updateParameters);
 
 		assertTrue(dsFileMgr.exists());
+
+		// delete datastore
+		DataStore ds = ResourceBuilder.dataStore(APP_SCHEMA_DATASTORE, AppSchemaDataStore.class)
+				.build();
+		DataStoreManager dsMgr = new DataStoreManager(GEOSERVER_URL);
+		dsMgr.setCredentials(GEOSERVER_USER, GEOSERVER_PASSWORD);
+		dsMgr.setWorkspace(APP_SCHEMA_WORKSPACE);
+		dsMgr.setResource(ds);
+
+		assertTrue(dsMgr.exists());
+		Map<String, String> deleteParams = new HashMap<String, String>();
+		deleteParams.put("recurse", "true");
+		dsMgr.delete(deleteParams);
+		assertFalse(dsMgr.exists());
+
+		// delete namespace
+		nsMgr.delete();
+		assertFalse(nsMgr.exists());
 	}
+
+	private Namespace createNamespace(NamespaceManager nsMgr, String prefix, String uri) {
+		Namespace ns = ResourceBuilder.namespace(prefix).setAttribute(Namespace.URI, uri).build();
+		nsMgr.setCredentials(GEOSERVER_USER, GEOSERVER_PASSWORD);
+		nsMgr.setResource(ns);
+
+		if (nsMgr.exists()) {
+			nsMgr.delete();
+		}
+
+		assertFalse(nsMgr.exists());
+		// create namespace
+		URL nsURL = nsMgr.create();
+		assertNotNull(nsURL);
+		assertTrue(nsMgr.exists());
+
+		return ns;
+	}
+
 }

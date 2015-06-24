@@ -20,6 +20,8 @@ import java.util.Map;
 
 import org.w3c.dom.Document;
 
+import eu.esdihumboldt.hale.io.geoserver.Resource;
+
 /**
  * TODO Type description
  * 

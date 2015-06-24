@@ -13,7 +13,7 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.geoserver.rest;
+package eu.esdihumboldt.hale.io.geoserver;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +31,10 @@ public class ResourceBuilder {
 
 	public static ResourceBuilder namespace(String prefix) {
 		return new ResourceBuilder(new Namespace(prefix));
+	}
+
+	public static ResourceBuilder workspace(String name) {
+		return new ResourceBuilder(new Workspace(name));
 	}
 
 	public static ResourceBuilder dataStoreFile(InputStream stream) {
@@ -56,11 +60,19 @@ public class ResourceBuilder {
 		}
 	}
 
+	public static ResourceBuilder featureType(String name) {
+		return new ResourceBuilder(new FeatureType(name));
+	}
+
+	public static ResourceBuilder layer(String name) {
+		return new ResourceBuilder(new Layer(name));
+	}
+
 	private ResourceBuilder(Resource resource) {
 		this.resource = resource;
 	}
 
-	public ResourceBuilder setAttribute(String name, String value) {
+	public ResourceBuilder setAttribute(String name, Object value) {
 		this.resource.setAttribute(name, value);
 		return this;
 	}

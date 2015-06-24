@@ -16,20 +16,16 @@
 package eu.esdihumboldt.hale.io.appschema.writer;
 
 import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.DATASTORE_FILE;
-import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.DATASTORE_TEMPLATE;
 import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.FEATURETYPE_FILE;
-import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.FEATURETYPE_TEMPLATE;
 import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.LAYER_FILE;
-import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.LAYER_TEMPLATE;
 import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.NAMESPACE_FILE;
-import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.NAMESPACE_TEMPLATE;
 import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.WORKSPACE_FILE;
-import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.WORKSPACE_TEMPLATE;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -42,6 +38,11 @@ import eu.esdihumboldt.hale.common.core.io.IOProviderConfigurationException;
 import eu.esdihumboldt.hale.common.core.io.ProgressIndicator;
 import eu.esdihumboldt.hale.common.core.io.report.IOReporter;
 import eu.esdihumboldt.hale.io.appschema.AppSchemaIO;
+import eu.esdihumboldt.hale.io.geoserver.DataStore;
+import eu.esdihumboldt.hale.io.geoserver.FeatureType;
+import eu.esdihumboldt.hale.io.geoserver.Layer;
+import eu.esdihumboldt.hale.io.geoserver.Namespace;
+import eu.esdihumboldt.hale.io.geoserver.Workspace;
 
 /**
  * TODO Type description
@@ -83,85 +84,91 @@ public class AppSchemaMappingFileWriter extends AbstractAppSchemaConfigurator {
 		out.flush();
 	}
 
-	// TODO: refactor this method
-	// TODO: close InputStreams after copying data
 	private void writeArchive(AppSchemaMappingGenerator generator, IOReporter reporter)
 			throws IOException {
-		Map<String, String> variables = generator.getAppSchemaDataStore();
+		Workspace ws = generator.getMainWorkspace();
+		Namespace mainNs = generator.getMainNamespace();
+		DataStore ds = generator.getAppSchemaDataStoreREST();
 
 		// save to archive
 		final ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(getTarget()
 				.getOutput()));
 		// add workspace folder
-		ZipEntry workspaceFolder = new ZipEntry(variables.get("workspaceName") + "/");
+		ZipEntry workspaceFolder = new ZipEntry(ws.getAttribute(Workspace.NAME) + "/");
 		zip.putNextEntry(workspaceFolder);
 		// add workspace file
-		InputStream workspaceIS = AppSchemaIO.loadTemplate(WORKSPACE_TEMPLATE, variables);
 		zip.putNextEntry(new ZipEntry(workspaceFolder.getName() + WORKSPACE_FILE));
-		ByteStreams.copy(workspaceIS, zip);
+		copyAndCloseInputStream(ws.asStream(), zip);
 		zip.closeEntry();
 		// add namespace file
-		InputStream namespaceIS = AppSchemaIO.loadTemplate(NAMESPACE_TEMPLATE, variables);
 		zip.putNextEntry(new ZipEntry(workspaceFolder.getName() + NAMESPACE_FILE));
-		ByteStreams.copy(namespaceIS, zip);
+		copyAndCloseInputStream(mainNs.asStream(), zip);
 		zip.closeEntry();
 		// add datastore folder
 		ZipEntry dataStoreFolder = new ZipEntry(workspaceFolder.getName()
-				+ variables.get("dataStoreName") + "/");
+				+ ds.getAttribute(DataStore.NAME) + "/");
 		zip.putNextEntry(dataStoreFolder);
 		// add datastore file
-		InputStream dataStoreIS = AppSchemaIO.loadTemplate(DATASTORE_TEMPLATE, variables);
 		zip.putNextEntry(new ZipEntry(dataStoreFolder.getName() + DATASTORE_FILE));
-		ByteStreams.copy(dataStoreIS, zip);
+		copyAndCloseInputStream(ds.asStream(), zip);
 		zip.closeEntry();
 		// add mapping file
-		zip.putNextEntry(new ZipEntry(dataStoreFolder.getName() + variables.get("mappingFileName")));
+		Map<String, String> connectionParams = ds.getConnectionParameters();
+		zip.putNextEntry(new ZipEntry(dataStoreFolder.getName()
+				+ connectionParams.get("mappingFileName")));
 		generator.writeMappingConf(zip);
 		zip.closeEntry();
 
 		// add feature type entries
-		Map<String, Map<String, String>> featureTypes = generator.getFeatureTypes();
-		for (String featureTypeName : featureTypes.keySet()) {
-			variables.putAll(featureTypes.get(featureTypeName));
+		List<FeatureType> featureTypes = generator.getFeatureTypes(ds);
+		for (FeatureType ft : featureTypes) {
+			Layer layer = generator.getLayer(ft);
 
 			// add feature type folder
-			ZipEntry featureTypeFolder = new ZipEntry(dataStoreFolder.getName() + featureTypeName
-					+ "/");
+			ZipEntry featureTypeFolder = new ZipEntry(dataStoreFolder.getName()
+					+ ft.getAttribute(FeatureType.NAME) + "/");
 			zip.putNextEntry(featureTypeFolder);
 			// add feature type file
-			InputStream featureTypeIS = AppSchemaIO.loadTemplate(FEATURETYPE_TEMPLATE, variables);
 			zip.putNextEntry(new ZipEntry(featureTypeFolder.getName() + FEATURETYPE_FILE));
-			ByteStreams.copy(featureTypeIS, zip);
+			copyAndCloseInputStream(ft.asStream(), zip);
 			zip.closeEntry();
 			// add layer file
-			InputStream layerIS = AppSchemaIO.loadTemplate(LAYER_TEMPLATE, variables);
 			zip.putNextEntry(new ZipEntry(featureTypeFolder.getName() + LAYER_FILE));
-			ByteStreams.copy(layerIS, zip);
+			copyAndCloseInputStream(layer.asStream(), zip);
 			zip.closeEntry();
 		}
 
 		// add secondary namespaces
-		Map<String, Map<String, String>> secondaryNamespaces = generator.getSecondaryNamespaces();
-		for (String nsPrefix : secondaryNamespaces.keySet()) {
-			Map<String, String> secondaryVariables = secondaryNamespaces.get(nsPrefix);
+		List<Namespace> secondaryNamespaces = generator.getSecondaryNamespaces();
+		for (Namespace secNs : secondaryNamespaces) {
+			Workspace secWs = generator.getWorkspace(secNs);
+
 			// add workspace folder
-			ZipEntry secondaryWorkspaceFolder = new ZipEntry(nsPrefix + "/");
+			ZipEntry secondaryWorkspaceFolder = new ZipEntry(secWs.name() + "/");
 			zip.putNextEntry(secondaryWorkspaceFolder);
 			// add workspace file
-			InputStream secondaryWorkspaceIS = AppSchemaIO.loadTemplate(WORKSPACE_TEMPLATE,
-					secondaryVariables);
 			zip.putNextEntry(new ZipEntry(secondaryWorkspaceFolder.getName() + WORKSPACE_FILE));
-			ByteStreams.copy(secondaryWorkspaceIS, zip);
+			copyAndCloseInputStream(secWs.asStream(), zip);
 			zip.closeEntry();
 			// add namespace file
-			InputStream secondaryNamespaceIS = AppSchemaIO.loadTemplate(NAMESPACE_TEMPLATE,
-					secondaryVariables);
 			zip.putNextEntry(new ZipEntry(secondaryWorkspaceFolder.getName() + NAMESPACE_FILE));
-			ByteStreams.copy(secondaryNamespaceIS, zip);
+			copyAndCloseInputStream(secNs.asStream(), zip);
 			zip.closeEntry();
 		}
 
 		zip.close();
 	}
 
+	private void copyAndCloseInputStream(InputStream from, OutputStream to) throws IOException {
+		try {
+			ByteStreams.copy(from, to);
+		} finally {
+			try {
+				from.close();
+			} catch (IOException e) {
+				// ignore
+			}
+
+		}
+	}
 }

@@ -13,7 +13,7 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.geoserver.rest;
+package eu.esdihumboldt.hale.io.geoserver;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,28 +23,28 @@ import java.util.Set;
  * 
  * @author stefano
  */
-public abstract class DataStore extends AbstractResource {
+public class Layer extends AbstractResource {
 
-	public static final String ID = "dataStoreId";
-	public static final String NAME = "dataStoreName";
-	public static final String WORKSPACE_ID = "workspaceId";
-	public static final String CONNECTION_PARAMS = "connectionParameters";
+	public static final String ID = "layerId";
+	public static final String NAME = "layerName";
+	public static final String FEATURE_TYPE_ID = "featureTypeId";
+
+	private static final String TEMPLATE_LOCATION = "/eu/esdihumboldt/hale/io/geoserver/template/data/layer-template.vm";
 
 	private static final Set<String> allowedAttributes = new HashSet<String>();
 
 	static {
 		allowedAttributes.add(ID);
 		allowedAttributes.add(NAME);
-		allowedAttributes.add(WORKSPACE_ID);
-		allowedAttributes.add(CONNECTION_PARAMS);
+		allowedAttributes.add(FEATURE_TYPE_ID);
 	}
 
-	public DataStore(String name) {
-		setAttribute(DataStore.NAME, name);
+	public Layer(String name) {
+		setAttribute(NAME, name);
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#name()
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#name()
 	 */
 	@Override
 	public String name() {
@@ -52,11 +52,18 @@ public abstract class DataStore extends AbstractResource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.AbstractResource#allowedAttributes()
+	 * @see eu.esdihumboldt.hale.io.geoserver.AbstractResource#allowedAttributes()
 	 */
 	@Override
 	protected Set<String> allowedAttributes() {
 		return allowedAttributes;
 	}
 
+	/**
+	 * @see eu.esdihumboldt.hale.io.geoserver.AbstractResource#templateLocation()
+	 */
+	@Override
+	protected String templateLocation() {
+		return TEMPLATE_LOCATION;
+	}
 }

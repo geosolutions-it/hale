@@ -24,6 +24,8 @@ import org.w3c.dom.Document;
 
 import com.google.common.base.Joiner;
 
+import eu.esdihumboldt.hale.io.geoserver.DataStoreFile;
+
 /**
  * TODO Type description
  * 

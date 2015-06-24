@@ -15,14 +15,6 @@
 
 package eu.esdihumboldt.hale.io.appschema;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * TODO Type description
@@ -40,51 +32,11 @@ public abstract class AppSchemaIO {
 	public static final String PARAM_USER = "appschema.rest.user";
 	public static final String PARAM_PASSWORD = "appschema.rest.password";
 
-	public static final String MAPPING_TEMPLATE = "/template/mapping-template.xml";
-	public static final String NAMESPACE_TEMPLATE = "/template/namespace-template.xml";
-	public static final String WORKSPACE_TEMPLATE = "/template/workspace-template.xml";
-	public static final String DATASTORE_TEMPLATE = "/template/datastore-template.xml";
-	public static final String FEATURETYPE_TEMPLATE = "/template/featuretype-template.xml";
-	public static final String LAYER_TEMPLATE = "/template/layer-template.xml";
-
+	public static final String MAPPING_TEMPLATE = "/eu/esdihumboldt/hale/io/geoserver/template/data/mapping-template.xml";
 	public static final String NAMESPACE_FILE = "namespace.xml";
 	public static final String WORKSPACE_FILE = "workspace.xml";
 	public static final String DATASTORE_FILE = "datastore.xml";
 	public static final String FEATURETYPE_FILE = "featuretype.xml";
 	public static final String LAYER_FILE = "layer.xml";
-
-	public static InputStream loadTemplate(String templateResource, Map<String, String> variables)
-			throws IOException {
-		InputStream templateInput = AppSchemaIO.class.getResourceAsStream(templateResource);
-		if (templateInput == null) {
-			return null;
-		}
-		if (variables == null || variables.isEmpty()) {
-			return templateInput;
-		}
-
-		// read template content
-		StringBuilder builder = new StringBuilder();
-		BufferedReader reader = new BufferedReader(new InputStreamReader(templateInput));
-		String line = null;
-		while ((line = reader.readLine()) != null) {
-			builder.append(line);
-			// add platform-independent newline char (works on JDK 5+)
-			builder.append(String.format("%n"));
-		}
-		String templateContent = builder.toString();
-		// interpolate variables
-		for (Entry<String, String> variable : variables.entrySet()) {
-			String varName = variable.getKey();
-			String varValue = variable.getValue();
-			if (varValue == null) {
-				varValue = "";
-			}
-			templateContent = templateContent.replace("${" + varName + "}", varValue);
-		}
-
-		// return template content as InputStream
-		return new ByteArrayInputStream(templateContent.getBytes(Charset.forName("UTF-8")));
-	}
 
 }

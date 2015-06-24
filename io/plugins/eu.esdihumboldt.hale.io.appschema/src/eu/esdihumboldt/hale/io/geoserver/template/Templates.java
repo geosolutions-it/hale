@@ -13,7 +13,7 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.appschema;
+package eu.esdihumboldt.hale.io.geoserver.template;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;

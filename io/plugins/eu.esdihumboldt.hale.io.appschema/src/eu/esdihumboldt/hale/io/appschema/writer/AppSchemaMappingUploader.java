@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import eu.esdihumboldt.hale.common.core.io.IOProviderConfigurationException;
@@ -28,14 +29,14 @@ import eu.esdihumboldt.hale.common.core.io.ProgressIndicator;
 import eu.esdihumboldt.hale.common.core.io.report.IOReporter;
 import eu.esdihumboldt.hale.common.core.io.supplier.LocatableOutputSupplier;
 import eu.esdihumboldt.hale.io.appschema.AppSchemaIO;
-import eu.esdihumboldt.hale.io.geoserver.rest.AppSchemaDataStore;
-import eu.esdihumboldt.hale.io.geoserver.rest.DataStore;
-import eu.esdihumboldt.hale.io.geoserver.rest.DataStoreFile;
+import eu.esdihumboldt.hale.io.geoserver.DataStore;
+import eu.esdihumboldt.hale.io.geoserver.DataStoreFile;
+import eu.esdihumboldt.hale.io.geoserver.Namespace;
+import eu.esdihumboldt.hale.io.geoserver.ResourceBuilder;
+import eu.esdihumboldt.hale.io.geoserver.Workspace;
 import eu.esdihumboldt.hale.io.geoserver.rest.DataStoreFileManager;
 import eu.esdihumboldt.hale.io.geoserver.rest.DataStoreManager;
-import eu.esdihumboldt.hale.io.geoserver.rest.Namespace;
 import eu.esdihumboldt.hale.io.geoserver.rest.NamespaceManager;
-import eu.esdihumboldt.hale.io.geoserver.rest.ResourceBuilder;
 
 /**
  * TODO Type description
@@ -72,11 +73,7 @@ public class AppSchemaMappingUploader extends AbstractAppSchemaConfigurator {
 		nsMgr.setCredentials(username, password);
 
 		// check whether main namespace/workspace exists; if not, create it
-		Map<String, String> dataStoreAttributes = generator.getAppSchemaDataStore();
-		String mainNsPrefix = dataStoreAttributes.get("prefix");
-		String mainNsUri = dataStoreAttributes.get("uri");
-		Namespace mainNs = ResourceBuilder.namespace(mainNsPrefix)
-				.setAttribute(Namespace.URI, mainNsUri).build();
+		Namespace mainNs = generator.getMainNamespace();
 		nsMgr.setResource(mainNs);
 		if (!nsMgr.exists()) {
 			nsMgr.create();
@@ -84,11 +81,8 @@ public class AppSchemaMappingUploader extends AbstractAppSchemaConfigurator {
 
 		// check whether secondary namespaces/workspaces exist; if not, create
 		// them
-		Map<String, Map<String, String>> secondaryNamespaces = generator.getSecondaryNamespaces();
-		for (String nsPrefix : secondaryNamespaces.keySet()) {
-			Map<String, String> nsAttributes = secondaryNamespaces.get(nsPrefix);
-			Namespace ns = ResourceBuilder.namespace(nsPrefix)
-					.setAttribute(Namespace.URI, nsAttributes.get(Namespace.URI)).build();
+		List<Namespace> secondaryNamespaces = generator.getSecondaryNamespaces();
+		for (Namespace ns : secondaryNamespaces) {
 			nsMgr.setResource(ns);
 
 			if (!nsMgr.exists()) {
@@ -98,17 +92,14 @@ public class AppSchemaMappingUploader extends AbstractAppSchemaConfigurator {
 	}
 
 	private void publishAppSchemaDataStore(AppSchemaMappingGenerator generator) throws IOException {
-		Map<String, String> dataStoreAttributes = generator.getAppSchemaDataStore();
-		String workspaceName = dataStoreAttributes.get("workspaceName");
-		String dataStoreName = dataStoreAttributes.get("dataStoreName");
+		Workspace ws = generator.getMainWorkspace();
 
 		// build datastore resource
-		DataStore dataStore = ResourceBuilder.dataStore(dataStoreName, AppSchemaDataStore.class)
-				.build();
+		DataStore dataStore = generator.getAppSchemaDataStoreREST();
 		DataStoreManager dsMgr = new DataStoreManager(geoserverURL);
 		dsMgr.setCredentials(username, password);
 		dsMgr.setResource(dataStore);
-		dsMgr.setWorkspace(workspaceName);
+		dsMgr.setWorkspace(ws.name());
 		// remove datastore, if necessary
 		if (dsMgr.exists()) {
 			Map<String, String> deleteParams = new HashMap<String, String>();
@@ -123,8 +114,8 @@ public class AppSchemaMappingUploader extends AbstractAppSchemaConfigurator {
 		DataStoreFile mappingFile = ResourceBuilder
 				.dataStoreFile(new ByteArrayInputStream(os.toByteArray()))
 				.setAttribute(DataStoreFile.EXTENSION, "appschema")
-				.setAttribute(DataStoreFile.DATASTORE, dataStoreName)
-				.setAttribute(DataStoreFile.WORKSPACE, workspaceName).build();
+				.setAttribute(DataStoreFile.DATASTORE, dataStore.name())
+				.setAttribute(DataStoreFile.WORKSPACE, ws.name()).build();
 		DataStoreFileManager dsFileMgr = new DataStoreFileManager(geoserverURL);
 		dsFileMgr.setCredentials(username, password);
 		dsFileMgr.setResource(mappingFile);

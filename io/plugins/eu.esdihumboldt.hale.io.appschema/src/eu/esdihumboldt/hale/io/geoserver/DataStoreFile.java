@@ -13,7 +13,7 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.geoserver.rest;
+package eu.esdihumboldt.hale.io.geoserver;
 
 import java.io.InputStream;
 import java.util.HashSet;
@@ -45,7 +45,7 @@ public class DataStoreFile extends AbstractResource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#name()
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#name()
 	 */
 	@Override
 	public String name() {
@@ -53,7 +53,7 @@ public class DataStoreFile extends AbstractResource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.AbstractResource#resourceStream()
+	 * @see eu.esdihumboldt.hale.io.geoserver.AbstractResource#resourceStream()
 	 */
 	@Override
 	protected InputStream resourceStream() {
@@ -61,7 +61,7 @@ public class DataStoreFile extends AbstractResource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.AbstractResource#allowedAttributes()
+	 * @see eu.esdihumboldt.hale.io.geoserver.AbstractResource#allowedAttributes()
 	 */
 	@Override
 	protected Set<String> allowedAttributes() {

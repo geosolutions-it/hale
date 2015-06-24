@@ -13,7 +13,7 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.geoserver.rest;
+package eu.esdihumboldt.hale.io.geoserver;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -29,7 +29,7 @@ import java.util.Set;
 
 import org.apache.http.entity.ContentType;
 
-import eu.esdihumboldt.hale.io.appschema.Templates;
+import eu.esdihumboldt.hale.io.geoserver.template.Templates;
 
 /**
  * TODO Type description
@@ -54,7 +54,7 @@ public abstract class AbstractResource implements Resource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#contentType()
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#contentType()
 	 */
 	@Override
 	public ContentType contentType() {
@@ -62,7 +62,7 @@ public abstract class AbstractResource implements Resource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#getAttribute(java.lang.String)
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#getAttribute(java.lang.String)
 	 */
 	@Override
 	public Object getAttribute(String name) {
@@ -74,11 +74,11 @@ public abstract class AbstractResource implements Resource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#setAttribute(java.lang.String,
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#setAttribute(java.lang.String,
 	 *      java.lang.Object)
 	 */
 	@Override
-	public void setAttribute(String name, String value) {
+	public void setAttribute(String name, Object value) {
 		if (name == null || name.isEmpty()) {
 			throw new IllegalArgumentException("name must be set");
 		}
@@ -92,7 +92,7 @@ public abstract class AbstractResource implements Resource {
 
 	/**
 	 * @throws IOException
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#print(java.io.OutputStream)
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#print(java.io.OutputStream)
 	 */
 	@Override
 	public void print(OutputStream out) throws IOException {
@@ -146,7 +146,7 @@ public abstract class AbstractResource implements Resource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#asStream()
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#asStream()
 	 */
 	@Override
 	public InputStream asStream() throws IOException {
@@ -156,7 +156,7 @@ public abstract class AbstractResource implements Resource {
 	}
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.geoserver.rest.Resource#asByteArray()
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#asByteArray()
 	 */
 	@Override
 	public byte[] asByteArray() throws IOException {

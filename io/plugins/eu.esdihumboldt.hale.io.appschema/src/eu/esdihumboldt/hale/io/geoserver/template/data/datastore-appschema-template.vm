@@ -2,7 +2,7 @@
   #if( $dataStoreId && !$dataStoreId.empty )
     <id>$dataStoreId</id>
   #end
-  <name>${dataStoreName}</name>
+  <name>$dataStoreName</name>
   <enabled>true</enabled>
   #if( $workspaceId && !$workspaceId.empty )
     <workspace>
@@ -13,7 +13,7 @@
     <connectionParameters>
       <entry key="dbtype">app-schema</entry>
       <entry key="namespace">$connectionParameters.uri</entry>
-      <entry key="url">file:./$connectionParameters.mappingFileName</entry>
+      <entry key="url">file:./workspaces/$connectionParameters.workspaceName/$dataStoreName/$connectionParameters.mappingFileName</entry>
     </connectionParameters>
   #end
   <__default>false</__default>
