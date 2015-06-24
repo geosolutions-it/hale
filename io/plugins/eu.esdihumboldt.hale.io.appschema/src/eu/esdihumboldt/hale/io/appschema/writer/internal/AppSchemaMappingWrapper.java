@@ -41,7 +41,7 @@ import com.google.common.base.Joiner;
 
 import eu.esdihumboldt.hale.common.align.model.ChildContext;
 import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
-import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
+import eu.esdihumboldt.hale.common.schema.model.ChildDefinition;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 
 /**
@@ -171,8 +171,10 @@ public class AppSchemaMappingWrapper {
 			ChildContext childContext = propertyPath.get(i);
 			// TODO: how to handle conditions?
 			Integer contextId = childContext.getContextName();
-			PropertyDefinition child = childContext.getChild().asProperty();
-			if (child != null) {
+			ChildDefinition<?> child = childContext.getChild();
+			// only properties (not groups) are taken into account in building
+			// the xpath expression
+			if (child.asProperty() != null) {
 				String namespaceURI = child.getName().getNamespaceURI();
 				String prefix = child.getName().getPrefix();
 				String name = child.getName().getLocalPart();
@@ -187,12 +189,12 @@ public class AppSchemaMappingWrapper {
 				}
 				// insert path segment at the first position
 				pathSegments.add(0, path);
-
-				if (child.getParentType().getName().equals(owningFeatureType.getName())) {
-					// I reached a nested feature type: stop walking the path
-					// TODO: for sure this will not work always and everywhere
-					break;
-				}
+			}
+			if (child.getParentType() != null
+					&& child.getParentType().getName().equals(owningFeatureType.getName())) {
+				// I reached a nested feature type: stop walking the path
+				// TODO: for sure this will not work always and everywhere
+				break;
 			}
 		}
 

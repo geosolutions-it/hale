@@ -46,16 +46,9 @@ public class AppSchemaMappingUtils {
 	public static final String GML_ABSTRACT_FEATURE_TYPE = "AbstractFeatureType";
 	public static final String GML_ABSTRACT_GEOMETRY_TYPE = "AbstractGeometryType";
 
-//	public static final QName QNAME_GML_ID = new QName("http://www.opengis.net/gml/3.2", "id");
-//	public static final QName QNAME_ABSTRACT_FEATURE_TYPE = new QName(
-//			"http://www.opengis.net/gml/3.2", "AbstractFeatureType");
-//	public static final QName QNAME_ABSTRACT_GEOMETRY_TYPE = new QName(
-//			"http://www.opengis.net/gml/3.2", "AbstractGeometryType");
 	public static final QName QNAME_XLINK_XREF = new QName("http://www.w3.org/1999/xlink", "href");
 
 	public static boolean isGmlId(PropertyDefinition propertyDef) {
-		// return propertyDef != null &&
-		// propertyDef.getName().equals(QNAME_GML_ID);
 		if (propertyDef == null) {
 			return false;
 		}
@@ -131,7 +124,7 @@ public class AppSchemaMappingUtils {
 		int ftIdx = findOwningFeatureTypeIndex(propertyPath);
 
 		if (ftIdx >= 0) {
-			return propertyPath.get(ftIdx).getChild().asProperty().getParentType();
+			return propertyPath.get(ftIdx).getChild().getParentType();
 		}
 		else {
 			return null;
@@ -149,13 +142,6 @@ public class AppSchemaMappingUtils {
 		int ftIdx = findOwningFeatureTypeIndex(propertyPath);
 
 		if (ftIdx >= 0) {
-//			int lastIdx = ftIdx - 1;
-//			// make sure last element is a property and not a group (i.e. a
-//			// choice element)
-//			while (lastIdx > 0 && propertyPath.get(lastIdx).getChild().asProperty() == null) {
-//				lastIdx--;
-//			}
-//			return propertyPath.subList(0, lastIdx);
 			return getContainerPropertyPath(propertyPath.subList(0, ftIdx));
 		}
 
@@ -165,12 +151,9 @@ public class AppSchemaMappingUtils {
 	private static int findOwningFeatureTypeIndex(List<ChildContext> propertyPath) {
 		for (int i = propertyPath.size() - 1; i >= 0; i--) {
 			ChildContext childContext = propertyPath.get(i);
-			PropertyDefinition propertyDef = childContext.getChild().asProperty();
-			if (propertyDef != null) {
-				TypeDefinition parentType = propertyDef.getParentType();
-				if (isFeatureType(parentType)) {
-					return i;
-				}
+			TypeDefinition parentType = childContext.getChild().getParentType();
+			if (isFeatureType(parentType)) {
+				return i;
 			}
 		}
 
