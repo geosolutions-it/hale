@@ -51,24 +51,55 @@ import com.google.common.base.Joiner;
 import eu.esdihumboldt.hale.io.geoserver.Resource;
 
 /**
- * TODO Type description
+ * Base class for classes representing GeoServer resource managers.
  * 
- * @author stefano
+ * <p>
+ * The basic idea is that a resource manager can retrieve the list of resourcees
+ * of type <code>T</code> and can execute the standard CRUD operations on a
+ * specific resource instance, called the "managed resource", which must be
+ * explicitly set by calling the {@link #setResource(Resource)} method.
+ * </p>
+ * 
+ * @author Stefano Costa, GeoSolutions
+ * @param <T> the type of the managed resource
  */
 public abstract class AbstractResourceManager<T extends Resource> implements ResourceManager<T> {
 
+	/**
+	 * Base path for all REST services.
+	 */
 	public static final String REST_BASE = "rest";
+	/**
+	 * Default request / response body format.
+	 */
 	public static final String DEF_FORMAT = "xml";
 
+	/**
+	 * Base GeoServer URL (e.g. http://localhost:8080/geoserver)
+	 */
 	protected URL geoserverUrl;
+	/**
+	 * The resource to manage.
+	 */
 	protected T resource;
 
 	private Executor executor;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param geoserverUrl the base GeoServer URL
+	 * @throws MalformedURLException if the provided URL is invalid
+	 */
 	public AbstractResourceManager(String geoserverUrl) throws MalformedURLException {
 		this(new URL(geoserverUrl));
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param geoserverUrl the base GeoServer URL
+	 */
 	public AbstractResourceManager(URL geoserverUrl) {
 		this.geoserverUrl = geoserverUrl;
 
@@ -278,7 +309,12 @@ public abstract class AbstractResourceManager<T extends Resource> implements Res
 		}
 	}
 
-	protected String getResourceListURL() throws MalformedURLException {
+	/**
+	 * Construct URL of the list of resources of type <code>T</code>.
+	 * 
+	 * @return the resource list URL
+	 */
+	protected String getResourceListURL() {
 		List<String> urlParts = new ArrayList<String>();
 		urlParts.add(geoserverUrl.toString());
 		urlParts.add(REST_BASE);
@@ -287,7 +323,12 @@ public abstract class AbstractResourceManager<T extends Resource> implements Res
 		return Joiner.on(".").join(Arrays.asList(Joiner.on('/').join(urlParts), getFormat()));
 	}
 
-	protected String getResourceURL() throws MalformedURLException {
+	/**
+	 * Construct URL of the managed resource.
+	 * 
+	 * @return the resource URL
+	 */
+	protected String getResourceURL() {
 		List<String> urlParts = new ArrayList<String>();
 		urlParts.add(geoserverUrl.toString());
 		urlParts.add(REST_BASE);
@@ -316,14 +357,45 @@ public abstract class AbstractResourceManager<T extends Resource> implements Res
 		return queryBuilder.toString();
 	}
 
+	/**
+	 * Template method, to be implemented by subclasses.
+	 * 
+	 * <p>
+	 * Should return the path to the list of resources of type <code>T</code>
+	 * (relative to GeoServer's REST base path, e.g.
+	 * http://localhost:8080/geoserver/rest).
+	 * 
+	 * @return the resource list path
+	 */
 	protected abstract String getResourceListPath();
 
+	/**
+	 * Template method, to be implemented by subclasses.
+	 * 
+	 * <p>
+	 * Should return the path to the managed resource (relative to GeoServer's
+	 * REST base path, e.g. http://localhost:8080/geoserver/rest).
+	 * </p>
+	 * 
+	 * @return the resource path
+	 */
 	protected abstract String getResourcePath();
 
+	/**
+	 * Retrieves the default request / response body format.
+	 * 
+	 * @return the format
+	 */
 	protected String getFormat() {
 		return DEF_FORMAT;
 	}
 
+	/**
+	 * Response handler that parses the response body into an XML
+	 * {@link Document}.
+	 * 
+	 * @author Stefano Costa, GeoSolutions
+	 */
 	private class XmlResponseHandler implements ResponseHandler<Document> {
 
 		/**
@@ -371,6 +443,13 @@ public abstract class AbstractResourceManager<T extends Resource> implements Res
 		return mimeType.equals("text/xml") || mimeType.equals("application/xml");
 	}
 
+	/**
+	 * Response handler that does nothing with the response body, but just
+	 * checks the response status and throws an exception if the status code is
+	 * greater than or equal to 300.
+	 * 
+	 * @author Stefano Costa, GeoSolutions
+	 */
 	private class EmptyResponseHandler implements ResponseHandler<Void> {
 
 		/**

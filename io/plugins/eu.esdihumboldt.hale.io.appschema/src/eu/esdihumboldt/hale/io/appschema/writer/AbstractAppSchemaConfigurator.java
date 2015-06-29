@@ -12,6 +12,11 @@ import eu.esdihumboldt.hale.common.core.io.report.IOReporter;
 import eu.esdihumboldt.hale.common.core.io.report.impl.IOMessageImpl;
 import eu.esdihumboldt.hale.io.appschema.AppSchemaIO;
 
+/**
+ * Base class for HALE alignment to app-schema mapping translators.
+ * 
+ * @author Stefano Costa, GeoSolutions
+ */
 public abstract class AbstractAppSchemaConfigurator extends AbstractAlignmentWriter {
 
 	@Override
@@ -59,10 +64,27 @@ public abstract class AbstractAppSchemaConfigurator extends AbstractAlignmentWri
 		return "GeoTools App-Schema Configurator";
 	}
 
+	/**
+	 * Retrieves the DataStore configuration.
+	 * 
+	 * @return the configured DataStore
+	 */
 	protected DataStore getDataStoreParameter() {
 		return getParameter(AppSchemaIO.PARAM_DATASTORE).as(DataStore.class);
 	}
 
+	/**
+	 * Template method to be implemented by subclasses. Implementations should
+	 * write the generated app-schema mapping to the specified target in the
+	 * format specified by the content type parameter.
+	 * 
+	 * @param generator holds the generated app-schema mapping
+	 * @param progress progress indicator
+	 * @param reporter status reporter
+	 * @throws IOProviderConfigurationException if an unsupported content type
+	 *             has been specified
+	 * @throws IOException if an error occurs writing to target
+	 */
 	protected abstract void handleMapping(AppSchemaMappingGenerator generator,
 			ProgressIndicator progress, IOReporter reporter)
 			throws IOProviderConfigurationException, IOException;

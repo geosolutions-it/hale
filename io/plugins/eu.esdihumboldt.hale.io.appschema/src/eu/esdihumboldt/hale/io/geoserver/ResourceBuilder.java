@@ -82,7 +82,7 @@ public class ResourceBuilder {
 	}
 
 	public void print(OutputStream out) throws IOException {
-		this.resource.print(out);
+		this.resource.write(out);
 	}
 
 }

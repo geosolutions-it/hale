@@ -33,14 +33,21 @@ import org.apache.velocity.app.VelocityEngine;
 import com.google.common.io.Files;
 
 /**
- * TODO Type description
+ * Singleton class encapsulating a Velocity engine instance.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class Templates {
 
 	private static Templates instance;
 
+	/**
+	 * Return the singleton factory instance.
+	 * 
+	 * @return the factory instance
+	 * @throws TemplateException if an error occurs initializing the template
+	 *             engine
+	 */
 	public static Templates getInstance() throws TemplateException {
 		if (instance == null) {
 			instance = new Templates();
@@ -61,7 +68,7 @@ public class Templates {
 		ve.setProperty(VelocityEngine.RUNTIME_LOG_LOGSYSTEM_CLASS,
 				"org.apache.velocity.runtime.log.JdkLogChute");
 		ve.setProperty(VelocityEngine.RESOURCE_LOADER, "file");
-		ve.setProperty("class.resource.loader.description", "Velocity Classpath Resource Loader");
+		ve.setProperty("class.resource.loader.description", "Velocity File Resource Loader");
 		ve.setProperty("file.resource.loader.class",
 				"org.apache.velocity.runtime.resource.loader.FileResourceLoader");
 		ve.setProperty("file.resource.loader.path", tmpDir.getAbsolutePath());
@@ -73,6 +80,23 @@ public class Templates {
 		}
 	}
 
+	/**
+	 * Loads the specified template file and merges it with a Velocity context
+	 * instance created from the provided variables; the final output is
+	 * returned as an {@link InputStream} instance.
+	 * 
+	 * <p>
+	 * NOTE: due to a problem with Velocity's classpath loader not working in an
+	 * OSGi context, the template file is first copied to a temp file and then
+	 * loaded from there. {@link File#deleteOnExit()} is invoked on the temp
+	 * file <code>File</code> object after the template is merged.
+	 * </p>
+	 * 
+	 * @param templateResource the template to load
+	 * @param variables the template context
+	 * @return the result of merging the template with the provided context
+	 * @throws TemplateException if an error occurs processing the template
+	 */
 	public InputStream loadTemplate(String templateResource, Map<String, Object> variables)
 			throws TemplateException {
 		VelocityContext vc = new VelocityContext(variables);

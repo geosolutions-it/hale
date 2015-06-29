@@ -45,16 +45,30 @@ import eu.esdihumboldt.hale.io.geoserver.Namespace;
 import eu.esdihumboldt.hale.io.geoserver.Workspace;
 
 /**
- * TODO Type description
+ * Writes the generated app-schema configuration to file.
  * 
- * @author stefano
+ * <p>
+ * If the provider's content type is set to
+ * <code>eu.esdihumboldt.hale.io.appschema.mapping</code> , only the mapping
+ * file is written.
+ * <p>
+ * If content type is set to
+ * <code>eu.esdihumboldt.hale.io.appschema.archive</code>, a ZIP archive
+ * containing both the mapping file and all other necessary configuration files
+ * is written (secondary namespaces, datastore configuration file, etc.). The
+ * archive must be uncompressed in GeoServer's data directory to publish the
+ * app-schema datastore.
+ * </p>
+ * 
+ * @author Stefano Costa, GeoSolutions
  */
 public class AppSchemaMappingFileWriter extends AbstractAppSchemaConfigurator {
 
 	private static final String DEFAULT_CONTENT_TYPE_ID = AppSchemaIO.CONTENT_TYPE_MAPPING;
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.appschema.writer.AbstractAppSchemaConfigurator#handleMapping(eu.esdihumboldt.hale.common.core.io.ProgressIndicator,
+	 * @see eu.esdihumboldt.hale.io.appschema.writer.AbstractAppSchemaConfigurator#handleMapping(eu.esdihumboldt.hale.io.appschema.writer.AppSchemaMappingGenerator,
+	 *      eu.esdihumboldt.hale.common.core.io.ProgressIndicator,
 	 *      eu.esdihumboldt.hale.common.core.io.report.IOReporter)
 	 */
 	@Override
@@ -88,7 +102,7 @@ public class AppSchemaMappingFileWriter extends AbstractAppSchemaConfigurator {
 			throws IOException {
 		Workspace ws = generator.getMainWorkspace();
 		Namespace mainNs = generator.getMainNamespace();
-		DataStore ds = generator.getAppSchemaDataStoreREST();
+		DataStore ds = generator.getAppSchemaDataStore();
 
 		// save to archive
 		final ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(getTarget()
@@ -120,7 +134,7 @@ public class AppSchemaMappingFileWriter extends AbstractAppSchemaConfigurator {
 		zip.closeEntry();
 
 		// add feature type entries
-		List<FeatureType> featureTypes = generator.getFeatureTypes(ds);
+		List<FeatureType> featureTypes = generator.getFeatureTypes();
 		for (FeatureType ft : featureTypes) {
 			Layer layer = generator.getLayer(ft);
 

@@ -20,15 +20,27 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * TODO Type description
+ * Abstract class representing a generic datastore resource.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public abstract class DataStore extends AbstractResource {
 
+	/**
+	 * "Datastore ID" attribute.
+	 */
 	public static final String ID = "dataStoreId";
+	/**
+	 * "Datastore name" attribute.
+	 */
 	public static final String NAME = "dataStoreName";
+	/**
+	 * "Workspace ID" attribute.
+	 */
 	public static final String WORKSPACE_ID = "workspaceId";
+	/**
+	 * "Connection parameters" attribute.
+	 */
 	public static final String CONNECTION_PARAMS = "connectionParameters";
 
 	private static final String TEMPLATE_LOCATION = "/eu/esdihumboldt/hale/io/geoserver/template/data/datastore-template.vm";
@@ -42,6 +54,11 @@ public abstract class DataStore extends AbstractResource {
 		allowedAttributes.add(CONNECTION_PARAMS);
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param name the datastore name
+	 */
 	public DataStore(String name) {
 		setAttribute(DataStore.NAME, name);
 	}
@@ -70,6 +87,11 @@ public abstract class DataStore extends AbstractResource {
 		return TEMPLATE_LOCATION;
 	}
 
+	/**
+	 * Returns the datastore connection parameters.
+	 * 
+	 * @return the connection parameters
+	 */
 	public Map<String, String> getConnectionParameters() {
 		return (Map<String, String>) getAttribute(CONNECTION_PARAMS);
 	}

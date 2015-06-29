@@ -16,20 +16,35 @@
 package eu.esdihumboldt.hale.io.geoserver.rest;
 
 /**
- * TODO Type description
+ * Exception thrown by resource managers when an operation on the managed
+ * resource fails.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class ResourceException extends RuntimeException {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3438214651953101857L;
+
+	/**
+	 * @see Exception#Exception(String)
+	 */
 	public ResourceException(String message) {
 		super(message);
 	}
 
+	/**
+	 * @see Exception#Exception(Throwable)
+	 */
 	public ResourceException(Throwable cause) {
 		super(cause);
 	}
 
+	/**
+	 * @see Exception#Exception(String, Throwable)
+	 */
 	public ResourceException(String message, Throwable cause) {
 		super(message, cause);
 	}

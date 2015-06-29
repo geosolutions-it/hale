@@ -19,14 +19,23 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * TODO Type description
+ * Class representing a layer resource.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class Layer extends AbstractResource {
 
+	/**
+	 * "Layer ID" attribute.
+	 */
 	public static final String ID = "layerId";
+	/**
+	 * "Layer name" attribute.
+	 */
 	public static final String NAME = "layerName";
+	/**
+	 * "Feature type ID" attribute.
+	 */
 	public static final String FEATURE_TYPE_ID = "featureTypeId";
 
 	private static final String TEMPLATE_LOCATION = "/eu/esdihumboldt/hale/io/geoserver/template/data/layer-template.vm";
@@ -39,6 +48,11 @@ public class Layer extends AbstractResource {
 		allowedAttributes.add(FEATURE_TYPE_ID);
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param name the layer name
+	 */
 	public Layer(String name) {
 		setAttribute(NAME, name);
 	}

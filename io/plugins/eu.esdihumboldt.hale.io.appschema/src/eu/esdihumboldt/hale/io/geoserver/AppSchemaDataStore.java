@@ -16,12 +16,17 @@
 package eu.esdihumboldt.hale.io.geoserver;
 
 /**
- * TODO Type description
+ * Class representing an app-schema datastore resource.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class AppSchemaDataStore extends DataStore {
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param name the datastore name
+	 */
 	public AppSchemaDataStore(String name) {
 		super(name);
 	}

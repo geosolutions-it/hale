@@ -20,7 +20,7 @@ import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMapping
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findOwningFeatureType;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.findOwningFeatureTypePath;
 import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.getTargetProperty;
-import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.isXRefAttribute;
+import static eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingUtils.isHRefAttribute;
 
 import java.util.Collection;
 import java.util.List;
@@ -29,6 +29,7 @@ import org.geotools.app_schema.AttributeExpressionMappingType;
 import org.geotools.app_schema.AttributeMappingType;
 import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 
+import eu.esdihumboldt.cst.functions.core.Join;
 import eu.esdihumboldt.hale.common.align.model.Alignment;
 import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.ChildContext;
@@ -42,9 +43,21 @@ import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 
 /**
- * TODO Type description
+ * Translates a type cell specifying a {@link Join} transformation function to
+ * two app-schema feature type mappings.
  * 
- * @author stefano
+ * <p>
+ * The current implementation has some limitations:
+ * <ul>
+ * <li>joining more than two tables is not supported</li>
+ * <li>specifying more than one join condition is not supported</li>
+ * <li>the first join type is considered to be the container feature type; the
+ * second join type is considered to be the nested feature type</li>
+ * <li>joining non-feature types is not supported</li>
+ * </ul>
+ * </p>
+ * 
+ * @author Stefano Costa, GeoSolutions
  */
 public class JoinHandler implements TypeTransformationHandler {
 
@@ -52,7 +65,9 @@ public class JoinHandler implements TypeTransformationHandler {
 	private PropertyEntityDefinition joinProperty;
 
 	/**
-	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandler#handleTypeTransformation(eu.esdihumboldt.hale.common.align.model.Cell,
+	 * 
+	 * @see eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandler#handleTypeTransformation(eu.esdihumboldt.hale.common.align.model.Alignment,
+	 *      eu.esdihumboldt.hale.common.align.model.Cell,
 	 *      eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingWrapper)
 	 */
 	@Override
@@ -118,19 +133,19 @@ public class JoinHandler implements TypeTransformationHandler {
 						// the join
 						break;
 					}
-					else if (isXRefAttribute(targetProperty.getDefinition().getDefinition())) {
-						// check if target property is a xref attribute
-						Property xrefProperty = targetProperty;
-						List<ChildContext> xrefPropertyPath = xrefProperty.getDefinition()
+					else if (isHRefAttribute(targetProperty.getDefinition().getDefinition())) {
+						// check if target property is a href attribute
+						Property hrefProperty = targetProperty;
+						List<ChildContext> hrefPropertyPath = hrefProperty.getDefinition()
 								.getPropertyPath();
-						List<ChildContext> xrefContainerPath = xrefPropertyPath.subList(0,
-								xrefPropertyPath.size() - 1);
-						TypeDefinition xrefParentType = xrefProperty.getDefinition()
+						List<ChildContext> hrefContainerPath = hrefPropertyPath.subList(0,
+								hrefPropertyPath.size() - 1);
+						TypeDefinition hrefParentType = hrefProperty.getDefinition()
 								.getDefinition().getParentType();
-						TypeDefinition childFT = findChildFeatureType(xrefParentType);
+						TypeDefinition childFT = findChildFeatureType(hrefParentType);
 
 						if (childFT != null) {
-							nestedFTPath = xrefContainerPath;
+							nestedFTPath = hrefContainerPath;
 							nestedFTMapping = context.getOrCreateFeatureTypeMapping(childFT);
 							nestedFTMapping.setSourceType(nestedType.getDefinition().getName()
 									.getLocalPart());

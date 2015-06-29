@@ -22,24 +22,53 @@ import java.io.OutputStream;
 import org.apache.http.entity.ContentType;
 
 /**
- * TODO Type description
+ * Interface defining the API for GeoServer REST resources.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public interface Resource {
 
+	/**
+	 * @return the resource name
+	 */
 	public String name();
 
+	/**
+	 * @return the resource content type
+	 */
 	public ContentType contentType();
 
+	/**
+	 * @param name the name of the attribute to retrieve
+	 * @return the value of the specified attribute, or <code>null</code> if it
+	 *         is not found
+	 */
 	public Object getAttribute(String name);
 
+	/**
+	 * @param name the name of the attribute to set
+	 * @param value the value of the attribute to set
+	 */
 	public void setAttribute(String name, Object value);
 
-	public void print(OutputStream out) throws IOException;
+	/**
+	 * Write the resource content to the provided output stream.
+	 * 
+	 * @param out the output stream to write to
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void write(OutputStream out) throws IOException;
 
+	/**
+	 * @return an input stream from which the resource content can be read
+	 * @throws IOException if an I/O error occurs
+	 */
 	public InputStream asStream() throws IOException;
 
+	/**
+	 * @return the resource content as byte array
+	 * @throws IOException if an I/O error occurs
+	 */
 	public byte[] asByteArray() throws IOException;
 
 }

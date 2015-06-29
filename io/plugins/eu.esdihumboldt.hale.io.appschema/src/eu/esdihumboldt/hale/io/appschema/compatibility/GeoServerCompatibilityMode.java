@@ -15,23 +15,22 @@
 
 package eu.esdihumboldt.hale.io.appschema.compatibility;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.ListMultimap;
 
 import eu.esdihumboldt.hale.common.align.compatibility.CompatibilityMode;
-import eu.esdihumboldt.hale.common.align.compatibility.CompatibilityModeUtil;
 import eu.esdihumboldt.hale.common.align.model.Cell;
+import eu.esdihumboldt.hale.common.align.model.ChildContext;
+import eu.esdihumboldt.hale.common.align.model.Condition;
 import eu.esdihumboldt.hale.common.align.model.Entity;
-import eu.esdihumboldt.hale.common.filter.AbstractGeotoolsFilter;
 import eu.esdihumboldt.hale.common.instance.model.Filter;
 import eu.esdihumboldt.hale.io.appschema.writer.internal.PropertyTransformationHandlerFactory;
 import eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandlerFactory;
 import eu.esdihumboldt.hale.io.appschema.writer.internal.UnsupportedTransformationException;
 
 /**
- * TODO Type description
+ * Compatibility mode for GeoServer app-schema mappings.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class GeoServerCompatibilityMode implements CompatibilityMode {
 
@@ -48,26 +47,9 @@ public class GeoServerCompatibilityMode implements CompatibilityMode {
 	 */
 	@Override
 	public boolean supportsCell(Cell cell) {
-		// type filters are not supported
-		if (!checkNoTypeFilters(cell)) {
-			return false;
-		}
+		boolean noFilters = checkNoFilters(cell);
 
-		// only accept cells with supported (property) filters
-		if (!CompatibilityModeUtil.checkFilters(cell, new Predicate<Filter>() {
-
-			@Override
-			public boolean apply(Filter filter) {
-				/*
-				 * XXX not nice to check it like this, but will do for now
-				 */
-				return filter instanceof AbstractGeotoolsFilter;
-			}
-		})) {
-			return false;
-		}
-
-		return true;
+		return noFilters;
 	}
 
 	private boolean checkTypeFunction(String id) {
@@ -91,15 +73,22 @@ public class GeoServerCompatibilityMode implements CompatibilityMode {
 		return true;
 	}
 
-	private boolean checkNoTypeFilters(Cell cell) {
-		ListMultimap<String, ? extends Entity> sourceEntities = cell.getSource();
-
-		if (sourceEntities == null) {
+	private boolean checkNoFilters(Cell cell) {
+		// filters are not (yet) supported
+		ListMultimap<String, ? extends Entity> entities = cell.getSource();
+		if (entities == null) {
 			return true;
 		}
-		else {
-			for (Entity source : sourceEntities.values()) {
-				if (source.getDefinition().getFilter() != null) {
+
+		for (Entity entity : entities.values()) {
+			Filter typeFilter = entity.getDefinition().getFilter();
+			if (typeFilter != null) {
+				return false;
+			}
+
+			for (ChildContext context : entity.getDefinition().getPropertyPath()) {
+				Condition cond = context.getCondition();
+				if (cond != null && cond.getFilter() != null) {
 					return false;
 				}
 			}

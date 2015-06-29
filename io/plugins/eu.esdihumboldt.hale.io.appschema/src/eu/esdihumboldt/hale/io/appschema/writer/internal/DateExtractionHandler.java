@@ -16,12 +16,14 @@
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
 import static eu.esdihumboldt.cst.functions.string.DateExtractionFunction.PARAMETER_DATE_FORMAT;
+import eu.esdihumboldt.cst.functions.string.DateExtraction;
 import eu.esdihumboldt.hale.common.align.model.Property;
 
 /**
- * TODO Type description
+ * Translates a property cell specifying a {@link DateExtraction} transformation
+ * function to an app-schema attribute mapping.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class DateExtractionHandler extends AbstractPropertyTransformationHandler {
 

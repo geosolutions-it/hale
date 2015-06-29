@@ -20,14 +20,23 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * TODO Type description
+ * Class representing a datastore file resource.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class DataStoreFile extends AbstractResource {
 
+	/**
+	 * "Workspace" attribute.
+	 */
 	public static final String WORKSPACE = "ws";
+	/**
+	 * "Datastore" attribute.
+	 */
 	public static final String DATASTORE = "ds";
+	/**
+	 * "Extension" attribute.
+	 */
 	public static final String EXTENSION = "extension";
 
 	private static final Set<String> allowedAttributes = new HashSet<String>();
@@ -40,6 +49,11 @@ public class DataStoreFile extends AbstractResource {
 
 	private final InputStream resourceStream;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param resourceStream the input stream providing the file contents
+	 */
 	public DataStoreFile(InputStream resourceStream) {
 		this.resourceStream = resourceStream;
 	}
@@ -68,9 +82,34 @@ public class DataStoreFile extends AbstractResource {
 		return allowedAttributes;
 	}
 
+	/**
+	 * Enumeration listing the supported datastore file types.
+	 * 
+	 * @author Stefano Costa, GeoSolutions
+	 */
 	public static enum Extension {
 
-		shp, properties, h2, spatialite, appschema
+		/**
+		 * Shapefile
+		 */
+		shp,
+		/**
+		 * Properties file
+		 */
+		properties,
+		/**
+		 * H2 database
+		 */
+		h2,
+		/**
+		 * SpatiaLite database
+		 */
+		spatialite,
+		/**
+		 * App-schema mapping file
+		 */
+		appschema
 
 	}
+
 }

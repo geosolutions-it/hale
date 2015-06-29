@@ -24,15 +24,17 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ListMultimap;
 
+import eu.esdihumboldt.cst.functions.core.FormattedString;
 import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.align.model.ParameterValue;
 import eu.esdihumboldt.hale.common.align.model.functions.FormattedStringFunction;
 import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
 
 /**
- * TODO Type description
+ * Translates a property cell specifying a {@link FormattedString}
+ * transformation function to an app-schema attribute mapping.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class FormattedStringHandler extends AbstractPropertyTransformationHandler {
 

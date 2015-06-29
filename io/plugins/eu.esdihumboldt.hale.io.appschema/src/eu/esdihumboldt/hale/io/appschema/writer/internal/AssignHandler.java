@@ -22,14 +22,16 @@ import java.util.List;
 
 import com.google.common.collect.ListMultimap;
 
+import eu.esdihumboldt.cst.functions.core.Assign;
 import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.align.model.ParameterValue;
 import eu.esdihumboldt.hale.common.align.model.Property;
 
 /**
- * TODO Type description
+ * Translates a property cell specifying an {@link Assign} transformation
+ * function to an app-schema attribute mapping.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class AssignHandler extends AbstractPropertyTransformationHandler {
 

@@ -24,20 +24,27 @@ import com.google.common.base.Joiner;
 import eu.esdihumboldt.hale.io.geoserver.Namespace;
 
 /**
- * TODO Type description
+ * Resource manager to manage datastore resources.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class NamespaceManager extends AbstractResourceManager<Namespace> {
 
 	/**
-	 * @param geoserverUrl
-	 * @throws MalformedURLException
+	 * Constructor.
+	 * 
+	 * @param geoserverUrl the base GeoServer URL
+	 * @throws MalformedURLException if the provided URL is invalid
 	 */
 	public NamespaceManager(String geoserverUrl) throws MalformedURLException {
 		super(geoserverUrl);
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param geoserverUrl the base GeoServer URL
+	 */
 	public NamespaceManager(URL geoserverUrl) {
 		super(geoserverUrl);
 	}

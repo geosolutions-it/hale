@@ -18,20 +18,35 @@ package eu.esdihumboldt.hale.io.geoserver.template;
 import java.io.IOException;
 
 /**
- * TODO Type description
+ * Exception thrown by {@link Templates} class if an error occurs initializing
+ * the template engine or merging a template.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class TemplateException extends IOException {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6623393454465464325L;
+
+	/**
+	 * @see Exception#Exception(String)
+	 */
 	public TemplateException(String message) {
 		super(message);
 	}
 
+	/**
+	 * @see Exception#Exception(Throwable)
+	 */
 	public TemplateException(Throwable cause) {
 		super(cause);
 	}
 
+	/**
+	 * @see Exception#Exception(String, Throwable)
+	 */
 	public TemplateException(String message, Throwable cause) {
 		super(message, cause);
 	}

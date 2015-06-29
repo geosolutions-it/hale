@@ -27,20 +27,27 @@ import com.google.common.base.Joiner;
 import eu.esdihumboldt.hale.io.geoserver.DataStoreFile;
 
 /**
- * TODO Type description
+ * Resource manager to manage datastore file resources.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class DataStoreFileManager extends AbstractResourceManager<DataStoreFile> {
 
 	/**
-	 * @param geoserverUrl
-	 * @throws MalformedURLException
+	 * Constructor.
+	 * 
+	 * @param geoserverUrl the base GeoServer URL
+	 * @throws MalformedURLException if the provided URL is invalid
 	 */
 	public DataStoreFileManager(String geoserverUrl) throws MalformedURLException {
 		super(geoserverUrl);
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param geoserverUrl the base GeoServer URL
+	 */
 	public DataStoreFileManager(URL geoserverUrl) {
 		super(geoserverUrl);
 	}

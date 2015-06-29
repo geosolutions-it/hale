@@ -68,9 +68,9 @@ import eu.esdihumboldt.hale.io.geoserver.ResourceBuilder;
 import eu.esdihumboldt.hale.io.geoserver.Workspace;
 
 /**
- * TODO Type description
+ * Translates a HALE alignment to an app-schema mapping configuration.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class AppSchemaMappingGenerator {
 
@@ -82,6 +82,13 @@ public class AppSchemaMappingGenerator {
 	private final DataStore dataStore;
 	private AppSchemaMappingWrapper mappingWrapper;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param alignment the alignment to translate
+	 * @param targetSchemaSpace the target schema space
+	 * @param dataStore the DataStore configuration to use
+	 */
 	public AppSchemaMappingGenerator(Alignment alignment, SchemaSpace targetSchemaSpace,
 			DataStore dataStore) {
 		this.alignment = alignment;
@@ -92,10 +99,13 @@ public class AppSchemaMappingGenerator {
 		this.dataStore = dataStore;
 	}
 
-	public Schema getTargetSchema() {
-		return targetSchema;
-	}
-
+	/**
+	 * Generates the app-schema mapping configuration.
+	 * 
+	 * @param reporter status reporter
+	 * @return the generated app-schema mapping configuration
+	 * @throws IOException if an error occurs loading the mapping template file
+	 */
 	public AppSchemaMappingWrapper generateMapping(IOReporter reporter) throws IOException {
 		AppSchemaDataAccessType mapping = loadMappingTemplate();
 		// reset wrapper
@@ -103,7 +113,8 @@ public class AppSchemaMappingGenerator {
 
 		// create namespace objects for all target types / properties
 		// TODO: this removes all namespaces that were defined in the
-		// template file, remove it in production
+		// template file, add code to cope with pre-configured namespaces
+		// instead
 		mapping.getNamespaces().getNamespace().clear();
 		createNamespaces();
 
@@ -120,13 +131,28 @@ public class AppSchemaMappingGenerator {
 		return mappingWrapper;
 	}
 
+	/**
+	 * Generates the app-schema mapping configuration and writes it to the
+	 * provided output stream.
+	 * 
+	 * @param output the output stream to write to
+	 * @param reporter the status reporter
+	 * @throws IOException if an I/O error occurs
+	 */
 	public void generateMapping(OutputStream output, IOReporter reporter) throws IOException {
 		generateMapping(reporter);
 
 		writeMappingConf(output);
 	}
 
-	public eu.esdihumboldt.hale.io.geoserver.DataStore getAppSchemaDataStoreREST() {
+	/**
+	 * Returns the generated app-schema datastore configuration.
+	 * 
+	 * @return the generated datastore configuration
+	 * @throws IllegalStateException if no app-schema mapping configuration has
+	 *             been generated yet or if no target schema is available
+	 */
+	public eu.esdihumboldt.hale.io.geoserver.DataStore getAppSchemaDataStore() {
 		checkMappingGenerated();
 		checkTargetSchemaAvailable();
 
@@ -151,27 +177,50 @@ public class AppSchemaMappingGenerator {
 						connectionParameters).build();
 	}
 
+	/**
+	 * Returns the generated workspace configuration for the main workspace.
+	 * 
+	 * @return the main workspace configuration
+	 * @throws IllegalStateException if the no app-schema mapping configuration
+	 *             has been generated yet or if no target schema is available
+	 */
 	public Workspace getMainWorkspace() {
+		checkMappingGenerated();
 		checkTargetSchemaAvailable();
 
 		Namespace ns = mappingWrapper.getOrCreateNamespace(targetSchema.getNamespace(), null);
 		return getWorkspace(ns.getPrefix());
 	}
 
+	/**
+	 * Returns the generated namespace configuration for the main namespace.
+	 * 
+	 * @return the main namespace configuration
+	 * @throws IllegalStateException if no app-schema mapping configuration has
+	 *             been generated yet or if no target schema is available
+	 */
 	public eu.esdihumboldt.hale.io.geoserver.Namespace getMainNamespace() {
+		checkMappingGenerated();
 		checkTargetSchemaAvailable();
 
 		Namespace ns = mappingWrapper.getOrCreateNamespace(targetSchema.getNamespace(), null);
 		return getNamespace(ns);
 	}
 
+	/**
+	 * Returns the generated namespace configuration for secondary namespaces.
+	 * 
+	 * @return the secondary namespaces configuration
+	 * @throws IllegalStateException if no app-schema mapping configuration has
+	 *             been generated yet or if no target schema is available
+	 */
 	public List<eu.esdihumboldt.hale.io.geoserver.Namespace> getSecondaryNamespaces() {
 		checkMappingGenerated();
 		checkTargetSchemaAvailable();
 
 		List<eu.esdihumboldt.hale.io.geoserver.Namespace> secondaryNamespaces = new ArrayList<eu.esdihumboldt.hale.io.geoserver.Namespace>();
 		for (Namespace ns : mappingWrapper.getAppSchemaMapping().getNamespaces().getNamespace()) {
-			if (!ns.getUri().equals(getTargetSchema().getNamespace())) {
+			if (!ns.getUri().equals(targetSchema.getNamespace())) {
 				secondaryNamespaces.add(getNamespace(ns));
 			}
 		}
@@ -179,6 +228,13 @@ public class AppSchemaMappingGenerator {
 		return secondaryNamespaces;
 	}
 
+	/**
+	 * Returns the configuration of the workspace associated to the provided
+	 * namespace.
+	 * 
+	 * @param ns the namespace
+	 * @return the configuration of the workspace associated to <code>ns</code>
+	 */
 	public Workspace getWorkspace(eu.esdihumboldt.hale.io.geoserver.Namespace ns) {
 		return getWorkspace(ns.name());
 	}
@@ -201,8 +257,16 @@ public class AppSchemaMappingGenerator {
 				.build();
 	}
 
-	public List<FeatureType> getFeatureTypes(eu.esdihumboldt.hale.io.geoserver.DataStore dataStore) {
+	/**
+	 * Returns the generated feature type configuration for all mapped feature
+	 * types.
+	 * 
+	 * @return the generated feature type configuration
+	 */
+	public List<FeatureType> getFeatureTypes() {
 		checkMappingGenerated();
+
+		eu.esdihumboldt.hale.io.geoserver.DataStore dataStore = getAppSchemaDataStore();
 
 		List<FeatureType> featureTypes = new ArrayList<FeatureType>();
 		for (FeatureTypeMapping ftMapping : mappingWrapper.getAppSchemaMapping().getTypeMappings()
@@ -213,7 +277,7 @@ public class AppSchemaMappingGenerator {
 		return featureTypes;
 	}
 
-	public FeatureType getFeatureType(eu.esdihumboldt.hale.io.geoserver.DataStore dataStore,
+	private FeatureType getFeatureType(eu.esdihumboldt.hale.io.geoserver.DataStore dataStore,
 			FeatureTypeMapping ftMapping) {
 		String featureTypeName = stripPrefix(ftMapping.getTargetElement());
 		String featureTypeId = featureTypeName + "_featureType";
@@ -229,6 +293,12 @@ public class AppSchemaMappingGenerator {
 						ns.getAttribute(eu.esdihumboldt.hale.io.geoserver.Namespace.ID)).build();
 	}
 
+	/**
+	 * Returns the layer configuration for the provided feature type.
+	 * 
+	 * @param featureType the feature type
+	 * @return the layer configuration
+	 */
 	public Layer getLayer(FeatureType featureType) {
 		String featureTypeName = featureType.name();
 		String featureTypeId = (String) featureType.getAttribute(FeatureType.ID);
@@ -404,7 +474,7 @@ public class AppSchemaMappingGenerator {
 									mappingWrapper);
 						} catch (UnsupportedTransformationException e) {
 							String errMsg = MessageFormat.format(
-									"Error processing property cell{0}", propertyCell.getId());
+									"Error processing property cell {0}", propertyCell.getId());
 							log.warn(errMsg, e);
 							if (reporter != null) {
 								reporter.warn(new IOMessageImpl(errMsg, e));
@@ -440,6 +510,12 @@ public class AppSchemaMappingGenerator {
 		return templateElement.getValue();
 	}
 
+	/**
+	 * Writes the generated app-schema mapping to the provided output stream.
+	 * 
+	 * @param out the output stream to write to
+	 * @throws IOException if an I/O error occurs
+	 */
 	public void writeMappingConf(OutputStream out) throws IOException {
 		checkMappingGenerated();
 

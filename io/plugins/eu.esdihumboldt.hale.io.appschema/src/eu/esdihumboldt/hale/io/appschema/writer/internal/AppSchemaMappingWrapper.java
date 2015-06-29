@@ -45,12 +45,20 @@ import eu.esdihumboldt.hale.common.schema.model.ChildDefinition;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 
 /**
- * TODO Type description
+ * App-schema mapping configuration wrapper.
  * 
- * @author stefano
+ * <p>
+ * Holds the state associated to the same mapping configuration and provides
+ * utility methods to mutate it.
+ * </p>
+ * 
+ * @author Stefano Costa, GeoSolutions
  */
 public class AppSchemaMappingWrapper {
 
+	/**
+	 * Base name for special attributes used for feature chaining.
+	 */
 	public static final String FEATURE_LINK_FIELD = "FEATURE_LINK";
 
 	private final String defaultPrefix = "nns";
@@ -63,7 +71,9 @@ public class AppSchemaMappingWrapper {
 	private final AppSchemaDataAccessType appSchemaMapping;
 
 	/**
+	 * Constructor.
 	 * 
+	 * @param appSchemaMapping the app-schema mapping to wrap
 	 */
 	public AppSchemaMappingWrapper(AppSchemaDataAccessType appSchemaMapping) {
 		this.appSchemaMapping = appSchemaMapping;
@@ -93,6 +103,15 @@ public class AppSchemaMappingWrapper {
 		}
 	}
 
+	/**
+	 * Return the configuration of the default datastore.
+	 * 
+	 * <p>
+	 * An empty datastore configuration is created if none is available.
+	 * </p>
+	 * 
+	 * @return the default datastore's configuration.
+	 */
 	public DataStore getDefaultDataStore() {
 		List<DataStore> dataStores = appSchemaMapping.getSourceDataStores().getDataStore();
 		if (dataStores.size() == 0) {
@@ -105,6 +124,23 @@ public class AppSchemaMappingWrapper {
 		return dataStores.get(0);
 	}
 
+	/**
+	 * Return a namespace object with the provided URI and prefix.
+	 * 
+	 * <p>
+	 * If a namespace object for the same URI already exists, it is returned.
+	 * Otherwise, a new one is created.
+	 * </p>
+	 * <p>
+	 * If the prefix is empty, a non-empty prefix is automatically generated.
+	 * If, in a subsequent call to this method, a non-empty prefix is provided,
+	 * the user-provided prefix will replace the generated one.
+	 * </p>
+	 * 
+	 * @param namespaceURI the namespace URI
+	 * @param prefix the namespace prefix
+	 * @return the created namespace object
+	 */
 	public Namespace getOrCreateNamespace(String namespaceURI, String prefix) {
 		if (namespaceURI != null && !namespaceURI.isEmpty()) {
 			if (!namespaceUriMap.containsKey(namespaceURI)) {
@@ -151,18 +187,51 @@ public class AppSchemaMappingWrapper {
 		}
 	}
 
+	/**
+	 * Add a schema URI to the list of target types.
+	 * 
+	 * @param schemaURI the schema URI
+	 */
 	public void addSchemaURI(String schemaURI) {
 		if (schemaURI != null && !schemaURI.isEmpty()) {
 			this.appSchemaMapping.getTargetTypes().getFeatureType().getSchemaUri().add(schemaURI);
 		}
 	}
 
+	/**
+	 * @see AppSchemaMappingWrapper#buildAttributeXPath(List)
+	 * 
+	 * @param propertyEntityDef the target property definition
+	 * @return the XPath expression pointing to the target property
+	 */
 	public String buildAttributeXPath(PropertyEntityDefinition propertyEntityDef) {
 		List<ChildContext> propertyPath = propertyEntityDef.getPropertyPath();
 
 		return buildAttributeXPath(propertyPath);
 	}
 
+	/**
+	 * Build an XPath expression to be used as &lt;targetAttribute&gt; for the
+	 * provided target property definition.
+	 * 
+	 * <p>
+	 * The algorithm to build the path is as follows:
+	 * <ol>
+	 * <li>the property path is traversed backwards, from end to beginning</li>
+	 * <li>on each step, a new path segment is added at the top of the list, but
+	 * only if the child definition describes a property and not a group</li>
+	 * <li>on each step, if a non-null context name is defined on the child
+	 * context, <code>[<context name>]</code> string is appended to the path
+	 * segment</li>
+	 * <li>the traversal stops when the parent type of the last visited property
+	 * is a feature type</li>
+	 * </ol>
+	 * 
+	 * TODO: revise this algorithm, since it doesn't always work as expected.
+	 * 
+	 * @param propertyPath the target property path
+	 * @return the XPath expression pointing to the target property
+	 */
 	public String buildAttributeXPath(List<ChildContext> propertyPath) {
 
 		List<String> pathSegments = new ArrayList<String>();
@@ -183,8 +252,7 @@ public class AppSchemaMappingWrapper {
 				String path = ns.getPrefix() + ":" + name;
 				if (contextId != null) {
 					// XPath indices start from 1, whereas contextId starts from
-					// 0
-					// --> add 1
+					// 0 --> add 1
 					path = String.format("%s[%d]", path, contextId + 1);
 				}
 				// insert path segment at the first position
@@ -204,10 +272,34 @@ public class AppSchemaMappingWrapper {
 
 	}
 
+	/**
+	 * Return the feature type mapping associated to the provided type.
+	 * 
+	 * <p>
+	 * If a feature type mapping for the provided type already exists, it is
+	 * returned; otherwise, a new one is created.
+	 * </p>
+	 * 
+	 * @param targetType the target type
+	 * @return the feature type mapping
+	 */
 	public FeatureTypeMapping getOrCreateFeatureTypeMapping(TypeDefinition targetType) {
 		return getOrCreateFeatureTypeMapping(targetType, null);
 	}
 
+	/**
+	 * Return the feature type mapping associated to the provided type and
+	 * mapping name.
+	 * 
+	 * <p>
+	 * If a feature type mapping for the provided type and mapping name already
+	 * exists, it is returned; otherwise, a new one is created.
+	 * </p>
+	 * 
+	 * @param targetType the target type
+	 * @param mappingName the mapping name
+	 * @return the feature type mapping
+	 */
 	public FeatureTypeMapping getOrCreateFeatureTypeMapping(TypeDefinition targetType,
 			String mappingName) {
 		if (targetType == null) {
@@ -244,6 +336,17 @@ public class AppSchemaMappingWrapper {
 		return hashBase.hashCode();
 	}
 
+	/**
+	 * Return the attribute mapping associated to the provided property.
+	 * 
+	 * <p>
+	 * If an attribute mapping for the provided property already exists, it is
+	 * returned; otherwise, a new one is created.
+	 * </p>
+	 * 
+	 * @param propertyPath the property path
+	 * @return the attribute mapping
+	 */
 	public AttributeMappingType getOrCreateAttributeMapping(List<ChildContext> propertyPath) {
 		if (propertyPath == null || propertyPath.isEmpty()) {
 			return null;
@@ -286,7 +389,7 @@ public class AppSchemaMappingWrapper {
 	}
 
 	/**
-	 * @return the appSchemaMapping
+	 * @return the wrapped app-schema mapping
 	 */
 	public AppSchemaDataAccessType getAppSchemaMapping() {
 		return appSchemaMapping;

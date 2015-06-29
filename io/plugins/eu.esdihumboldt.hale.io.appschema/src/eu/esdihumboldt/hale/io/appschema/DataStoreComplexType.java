@@ -17,6 +17,7 @@ package eu.esdihumboldt.hale.io.appschema;
 
 import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.APP_SCHEMA_NAMESPACE;
 import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.APP_SCHEMA_PREFIX;
+import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.getFirstElementByTagName;
 
 import java.util.List;
 
@@ -34,9 +35,9 @@ import org.w3c.dom.NodeList;
 import eu.esdihumboldt.hale.common.core.io.ComplexValueType;
 
 /**
- * TODO Type description
+ * Complex value for DataStore configuration.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class DataStoreComplexType implements ComplexValueType<DataStore, Void> {
 
@@ -49,7 +50,7 @@ public class DataStoreComplexType implements ComplexValueType<DataStore, Void> {
 		DataStore dataStore = new DataStore();
 
 		if (fragment != null) {
-			Element idEl = getFirstElementByTagName(fragment, "id");
+			Element idEl = getFirstElementByTagName(fragment, "id", APP_SCHEMA_NAMESPACE);
 			if (idEl != null) {
 				dataStore.setId(idEl.getTextContent());
 			}
@@ -60,8 +61,10 @@ public class DataStoreComplexType implements ComplexValueType<DataStore, Void> {
 				dataStore.setParameters(new Parameters());
 				for (int i = 0; i < paramElements.getLength(); i++) {
 					Element paramEl = (Element) paramElements.item(i);
-					Element paramNameEl = getFirstElementByTagName(paramEl, "name");
-					Element paramValueEl = getFirstElementByTagName(paramEl, "value");
+					Element paramNameEl = getFirstElementByTagName(paramEl, "name",
+							APP_SCHEMA_NAMESPACE);
+					Element paramValueEl = getFirstElementByTagName(paramEl, "value",
+							APP_SCHEMA_NAMESPACE);
 					if (paramNameEl != null && paramValueEl != null) {
 						Parameter param = new Parameter();
 						param.setName(paramNameEl.getTextContent());
@@ -122,17 +125,6 @@ public class DataStoreComplexType implements ComplexValueType<DataStore, Void> {
 			return dataStoreEl;
 		} catch (ParserConfigurationException e) {
 			throw new IllegalStateException(e);
-		}
-	}
-
-	private Element getFirstElementByTagName(Element el, String tagName) {
-		NodeList elements = el.getElementsByTagNameNS(APP_SCHEMA_NAMESPACE, tagName);
-
-		if (elements != null && elements.getLength() > 0) {
-			return (Element) elements.item(0);
-		}
-		else {
-			return null;
 		}
 	}
 

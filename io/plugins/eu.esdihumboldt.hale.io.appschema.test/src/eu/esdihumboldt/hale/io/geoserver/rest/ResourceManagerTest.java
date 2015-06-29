@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -37,29 +38,24 @@ import eu.esdihumboldt.hale.io.geoserver.DataStoreFile.Extension;
 import eu.esdihumboldt.hale.io.geoserver.Namespace;
 import eu.esdihumboldt.hale.io.geoserver.ResourceBuilder;
 
-/**
- * TODO Type description
- * 
- * @author stefano
- */
 public class ResourceManagerTest {
 
 	// TODO: make this configurable
-	public static final String GEOSERVER_URL = "http://localhost:8080/geoserver";
-	public static final String GEOSERVER_USER = "admin";
-	public static final String GEOSERVER_PASSWORD = "geoserver";
+	private static final String GEOSERVER_URL = "http://localhost:8080/geoserver";
+	private static final String GEOSERVER_USER = "admin";
+	private static final String GEOSERVER_PASSWORD = "geoserver";
 
-	public static final String NAMESPACE_PREFIX = "hale";
-	public static final String NAMESPACE_URI = "http://www.esdi-community.eu/projects/hale";
-	public static final String NAMESPACE_URI_ALT = "http://www.esdi-community.eu/projects/hale_alt";
+	private static final String NAMESPACE_PREFIX = "hale";
+	private static final String NAMESPACE_URI = "http://www.esdi-community.eu/projects/hale";
+	private static final String NAMESPACE_URI_ALT = "http://www.esdi-community.eu/projects/hale_alt";
 
-	public static final String APP_SCHEMA_MAPPING_FILE = "/data/LandCoverVector.xml";
-	public static final String APP_SCHEMA_DATASTORE = "LandCoverVector";
-	public static final String APP_SCHEMA_WORKSPACE = "hale_lcv";
-	public static final String APP_SCHEMA_URI = "http://inspire.ec.europa.eu/schemas/lcv/3.0";
+	private static final String APP_SCHEMA_MAPPING_FILE = "/data/LandCoverVector.xml";
+	private static final String APP_SCHEMA_DATASTORE = "LandCoverVector";
+	private static final String APP_SCHEMA_WORKSPACE = "hale_lcv";
+	private static final String APP_SCHEMA_URI = "http://inspire.ec.europa.eu/schemas/lcv/3.0";
 
 	@Test
-//	@Ignore("Requires a live GeoServer instance to run")
+	@Ignore("Requires a live GeoServer instance to run")
 	public void testNamespaceManager() throws Exception {
 
 		NamespaceManager nsMgr = new NamespaceManager(GEOSERVER_URL);
@@ -92,7 +88,7 @@ public class ResourceManagerTest {
 	}
 
 	@Test
-//	@Ignore("Requires a live GeoServer instance to run")
+	@Ignore("Requires a live GeoServer instance to run")
 	public void testDataStoreManager() throws Exception {
 
 		NamespaceManager nsMgr = new NamespaceManager(GEOSERVER_URL);
@@ -147,7 +143,7 @@ public class ResourceManagerTest {
 	}
 
 	@Test
-//	@Ignore("Requires a live GeoServer instance to run")
+	@Ignore("Requires a live GeoServer instance to run")
 	public void testDataStoreFileManager() throws Exception {
 
 		NamespaceManager nsMgr = new NamespaceManager(GEOSERVER_URL);

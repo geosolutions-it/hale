@@ -20,14 +20,23 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * TODO Type description
+ * Class representing a namespace resource.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class Namespace extends AbstractResource {
 
+	/**
+	 * "Namespace ID" attribute.
+	 */
 	public static final String ID = "namespaceId";
+	/**
+	 * "Namespace prefix" attribute.
+	 */
 	public static final String PREFIX = "prefix";
+	/**
+	 * "Namespace URI" attribute.
+	 */
 	public static final String URI = "uri";
 
 	private static final String TEMPLATE_LOCATION = "/eu/esdihumboldt/hale/io/geoserver/template/data/namespace-template.vm";
@@ -41,7 +50,13 @@ public class Namespace extends AbstractResource {
 	}
 
 	/**
+	 * Constructor.
 	 * 
+	 * <p>
+	 * The provided <code>prefix</prefix> is used as the resource name.
+	 * </p>
+	 * 
+	 * @param prefix the namespace prefix
 	 */
 	Namespace(String prefix) {
 		setAttribute(PREFIX, prefix);

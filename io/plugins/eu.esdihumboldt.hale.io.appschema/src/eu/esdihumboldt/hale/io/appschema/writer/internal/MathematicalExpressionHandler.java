@@ -24,9 +24,10 @@ import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.align.model.impl.PropertyEntityDefinition;
 
 /**
- * TODO Type description
+ * Translates a property cell specifying a {@link MathematicalExpression}
+ * transformation function to an app-schema attribute mapping.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class MathematicalExpressionHandler extends AbstractPropertyTransformationHandler {
 

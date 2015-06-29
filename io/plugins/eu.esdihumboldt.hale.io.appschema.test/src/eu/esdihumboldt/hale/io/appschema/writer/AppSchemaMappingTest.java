@@ -13,7 +13,7 @@
  *     Data Harmonisation Panel <http://www.dhpanel.eu>
  */
 
-package eu.esdihumboldt.hale.io.appschema.writer.internal;
+package eu.esdihumboldt.hale.io.appschema.writer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -70,13 +70,16 @@ import eu.esdihumboldt.hale.common.schema.model.Schema;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 import eu.esdihumboldt.hale.common.schema.model.impl.DefaultTypeIndex;
 import eu.esdihumboldt.hale.common.schema.persist.hsd.HaleSchemaReader;
+import eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingWrapper;
+import eu.esdihumboldt.hale.io.appschema.writer.internal.AssignHandler;
+import eu.esdihumboldt.hale.io.appschema.writer.internal.DateExtractionHandler;
+import eu.esdihumboldt.hale.io.appschema.writer.internal.FormattedStringHandler;
+import eu.esdihumboldt.hale.io.appschema.writer.internal.JoinHandler;
+import eu.esdihumboldt.hale.io.appschema.writer.internal.MathematicalExpressionHandler;
+import eu.esdihumboldt.hale.io.appschema.writer.internal.RenameHandler;
+import eu.esdihumboldt.hale.io.appschema.writer.internal.RetypeHandler;
 import eu.esdihumboldt.hale.io.xsd.reader.XmlSchemaReader;
 
-/**
- * TODO Type description
- * 
- * @author stefano
- */
 public class AppSchemaMappingTest {
 
 	private static final String SOURCE_PATH = "/data/source.hsd";

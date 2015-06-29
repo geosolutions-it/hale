@@ -19,13 +19,19 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * TODO Type description
+ * Class representing a workspace resource.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class Workspace extends AbstractResource {
 
+	/**
+	 * "Workspace ID" attribute.
+	 */
 	public static final String ID = "workspaceId";
+	/**
+	 * "Workspace name" attribute.
+	 */
 	public static final String NAME = "workspaceName";
 
 	private static final String TEMPLATE_LOCATION = "/eu/esdihumboldt/hale/io/geoserver/template/data/workspace-template.vm";
@@ -37,6 +43,11 @@ public class Workspace extends AbstractResource {
 		allowedAttributes.add(NAME);
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param name the workspace name
+	 */
 	public Workspace(String name) {
 		setAttribute(NAME, name);
 	}

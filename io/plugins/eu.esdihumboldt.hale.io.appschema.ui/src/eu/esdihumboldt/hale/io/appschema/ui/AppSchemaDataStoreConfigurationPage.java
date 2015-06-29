@@ -21,9 +21,13 @@ import eu.esdihumboldt.hale.ui.io.config.AbstractConfigurationPage;
 
 /**
  * 
- * TODO Type description
+ * Configuration page for source DataStore.
  * 
- * @author stefano
+ * <p>
+ * Current implementation can handle just a single PostGIS datastore.
+ * </p>
+ * 
+ * @author Stefano Costa, GeoSolutions
  */
 public class AppSchemaDataStoreConfigurationPage extends
 		AbstractConfigurationPage<AbstractAppSchemaConfigurator, AppSchemaAlignmentExportWizard> {
@@ -48,6 +52,9 @@ public class AppSchemaDataStoreConfigurationPage extends
 
 	private Button exposePK;
 
+	/**
+	 * Default constructor.
+	 */
 	public AppSchemaDataStoreConfigurationPage() {
 		super("datastore.conf");
 		setTitle("App-Schema DataStore configuration");
@@ -198,7 +205,7 @@ public class AppSchemaDataStoreConfigurationPage extends
 			try {
 				return Integer.valueOf(hostAndPort[1]);
 			} catch (NumberFormatException e) {
-
+				// ignore exception
 			}
 		}
 

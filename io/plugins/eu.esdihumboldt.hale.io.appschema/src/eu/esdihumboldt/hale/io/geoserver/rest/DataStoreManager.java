@@ -24,22 +24,29 @@ import com.google.common.base.Joiner;
 import eu.esdihumboldt.hale.io.geoserver.DataStore;
 
 /**
- * TODO Type description
+ * Resource manager to manage datastore resources.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class DataStoreManager extends AbstractResourceManager<DataStore> {
 
 	private String workspace;
 
 	/**
-	 * @param geoserverUrl
-	 * @throws MalformedURLException
+	 * Constructor.
+	 * 
+	 * @param geoserverUrl the base GeoServer URL
+	 * @throws MalformedURLException if the provided URL is invalid
 	 */
 	public DataStoreManager(String geoserverUrl) throws MalformedURLException {
 		super(geoserverUrl);
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param geoserverUrl the base GeoServer URL
+	 */
 	public DataStoreManager(URL geoserverUrl) {
 		super(geoserverUrl);
 	}
@@ -70,10 +77,22 @@ public class DataStoreManager extends AbstractResourceManager<DataStore> {
 		}
 	}
 
+	/**
+	 * Retrieve the name of the workspace to which the datastore resources
+	 * managed by this manager belong.
+	 * 
+	 * @return the workspace name
+	 */
 	public String getWorkspace() {
 		return workspace;
 	}
 
+	/**
+	 * Set the name of the workspace to which the datastore resources managed by
+	 * this manager belong.
+	 * 
+	 * @param workspace the workspace name
+	 */
 	public void setWorkspace(String workspace) {
 		this.workspace = workspace;
 	}

@@ -19,15 +19,27 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * TODO Type description
+ * Class representing a feature type resource.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class FeatureType extends AbstractResource {
 
+	/**
+	 * "Feature type ID" attribute.
+	 */
 	public static final String ID = "featureTypeId";
+	/**
+	 * "Feature type name" attribute.
+	 */
 	public static final String NAME = "featureTypeName";
+	/**
+	 * "Namespace ID" attribute.
+	 */
 	public static final String NAMESPACE_ID = "namespaceId";
+	/**
+	 * "Datastore ID" attribute.
+	 */
 	public static final String DATASTORE_ID = "dataStoreId";
 
 	private static final String TEMPLATE_LOCATION = "/eu/esdihumboldt/hale/io/geoserver/template/data/featuretype-template.vm";
@@ -41,6 +53,11 @@ public class FeatureType extends AbstractResource {
 		allowedAttributes.add(DATASTORE_ID);
 	}
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param name the feature type name
+	 */
 	public FeatureType(String name) {
 		setAttribute(NAME, name);
 	}

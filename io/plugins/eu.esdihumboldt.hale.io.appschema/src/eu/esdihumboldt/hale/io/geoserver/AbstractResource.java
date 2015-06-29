@@ -32,20 +32,39 @@ import org.apache.http.entity.ContentType;
 import eu.esdihumboldt.hale.io.geoserver.template.Templates;
 
 /**
- * TODO Type description
+ * Base class for classes representing GeoServer resources.
  * 
- * @author stefano
+ * <p>
+ * The basic idea is that a resource has a name, a set of attributes (the actual
+ * set of attributes depends on the resource type) and a content, which is
+ * either read from a template file, or directly from an input stream.
+ * </p>
+ * 
+ * @author Stefano Costa, GeoSolutions
  */
 public abstract class AbstractResource implements Resource {
 
+	/**
+	 * Default resource content type.
+	 */
 	public static final ContentType DEF_CONTENT_TYPE = ContentType.APPLICATION_XML
 			.withCharset("UTF-8");
 
+	/**
+	 * Resource attributes.
+	 */
 	protected Map<String, Object> attributes;
+	/**
+	 * The set of allowed attribute names for this particular resource type.
+	 */
 	protected Set<String> allowedAttributes;
 
 	/**
+	 * Default constructor.
 	 * 
+	 * <p>
+	 * Should be invoked by subclasses.
+	 * </p>
 	 */
 	public AbstractResource() {
 		this.attributes = new HashMap<String, Object>();
@@ -91,11 +110,10 @@ public abstract class AbstractResource implements Resource {
 	}
 
 	/**
-	 * @throws IOException
-	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#print(java.io.OutputStream)
+	 * @see eu.esdihumboldt.hale.io.geoserver.Resource#write(java.io.OutputStream)
 	 */
 	@Override
-	public void print(OutputStream out) throws IOException {
+	public void write(OutputStream out) throws IOException {
 
 		// unset unspecified variables by setting their value to null
 		for (String var : this.allowedAttributes) {
@@ -104,7 +122,7 @@ public abstract class AbstractResource implements Resource {
 			}
 		}
 
-		InputStream resourceStream = loadResource();
+		InputStream resourceStream = locateResource();
 		if (resourceStream != null) {
 			BufferedInputStream input = new BufferedInputStream(resourceStream);
 			BufferedOutputStream output = new BufferedOutputStream(out);
@@ -129,19 +147,30 @@ public abstract class AbstractResource implements Resource {
 
 	}
 
-	protected InputStream loadResource() throws IOException {
+	/**
+	 * Grabs an input stream from which resource content can be read.
+	 * 
+	 * <p>
+	 * If a non-null template location is returned by the
+	 * {@link #templateLocation()} method, the returned input stream points to
+	 * the result of the merging of the template with the resource; otherwise,
+	 * the result of {@link #resourceStream()} is returned.
+	 * </p>
+	 * 
+	 * @return the input stream from which resource content is read
+	 * @throws IOException if an I/O error occurs
+	 */
+	protected InputStream locateResource() throws IOException {
 
 		if (templateLocation() != null && !templateLocation().isEmpty()) {
 			// resource is loaded from a template and attributes map is used to
 			// interpolate variables in it
 			return Templates.getInstance().loadTemplate(templateLocation(), this.attributes);
 		}
-		else if (resourceStream() != null) {
+		else {
 			// load resource straight from the classpath
 			return resourceStream();
 		}
-
-		return null;
 
 	}
 
@@ -162,7 +191,7 @@ public abstract class AbstractResource implements Resource {
 	public byte[] asByteArray() throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try {
-			print(bos);
+			write(bos);
 
 			return bos.toByteArray();
 		} finally {
@@ -178,7 +207,7 @@ public abstract class AbstractResource implements Resource {
 	 * Should be overridden by sublcasses loading resource content from
 	 * template.
 	 * 
-	 * @return
+	 * @return the template location (relative to classpath)
 	 */
 	protected String templateLocation() {
 		return null;
@@ -188,11 +217,22 @@ public abstract class AbstractResource implements Resource {
 	 * Should be overridden by subclasses loading resource content from an
 	 * {@link InputStream}, e.g. file resources.
 	 * 
-	 * @return
+	 * @return the {@link InputStream} from which resource content should be
+	 *         read
 	 */
 	protected InputStream resourceStream() {
 		return null;
 	}
 
+	/**
+	 * Return the set of allowed attributes.
+	 * 
+	 * <p>
+	 * The method must be implemented by subclasses and is invoked by the
+	 * default constructor to populate the {@link #allowedAttributes} set.
+	 * </p>
+	 * 
+	 * @return the set of allowed attributes
+	 */
 	protected abstract Set<String> allowedAttributes();
 }

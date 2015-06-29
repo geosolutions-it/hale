@@ -20,13 +20,20 @@ import org.geotools.app_schema.AttributeMappingType;
 import eu.esdihumboldt.hale.common.align.model.Cell;
 
 /**
- * TODO Type description
+ * Interface defining the API for property transformation handlers.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public interface PropertyTransformationHandler {
 
+	/**
+	 * Translates a property cell to an app-schema attribute mapping.
+	 * 
+	 * @param propertyCell the property cell
+	 * @param mappingWrapper the app-schema mapping wrapper
+	 * @return the attribute mapping
+	 */
 	public AttributeMappingType handlePropertyTransformation(Cell propertyCell,
-			AppSchemaMappingWrapper context);
+			AppSchemaMappingWrapper mappingWrapper);
 
 }

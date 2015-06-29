@@ -22,9 +22,10 @@ import eu.esdihumboldt.hale.common.align.model.functions.FormattedStringFunction
 import eu.esdihumboldt.hale.common.align.model.functions.RenameFunction;
 
 /**
- * TODO Type description
+ * Instantiates the property transformation handler capable of handling the
+ * specified transformation function.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class PropertyTransformationHandlerFactory {
 
@@ -34,6 +35,11 @@ public class PropertyTransformationHandlerFactory {
 
 	}
 
+	/**
+	 * Return the singleton factory instance.
+	 * 
+	 * @return the factory instance
+	 */
 	public static PropertyTransformationHandlerFactory getInstance() {
 		if (instance == null) {
 			instance = new PropertyTransformationHandlerFactory();
@@ -42,6 +48,16 @@ public class PropertyTransformationHandlerFactory {
 		return instance;
 	}
 
+	/**
+	 * Creates a new property transformation handler instance to handle the
+	 * transformation function specified by the provided identifier.
+	 * 
+	 * @param propertyTransformationIdentifier the property transformation
+	 *            function identifier
+	 * @return the property transformation handler instance
+	 * @throws UnsupportedTransformationException if the specified
+	 *             transformation is not supported
+	 */
 	public PropertyTransformationHandler createPropertyTransformationHandler(
 			String propertyTransformationIdentifier) throws UnsupportedTransformationException {
 		if (propertyTransformationIdentifier == null

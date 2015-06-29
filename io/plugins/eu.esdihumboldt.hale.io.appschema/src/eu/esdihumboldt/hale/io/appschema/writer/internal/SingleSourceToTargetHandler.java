@@ -25,7 +25,8 @@ import eu.esdihumboldt.hale.common.align.model.Entity;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 
 /**
- * TODO Type description
+ * Base class for type transformation handlers converting a single source entity
+ * to a single target entity.
  * 
  * @author stefano
  */

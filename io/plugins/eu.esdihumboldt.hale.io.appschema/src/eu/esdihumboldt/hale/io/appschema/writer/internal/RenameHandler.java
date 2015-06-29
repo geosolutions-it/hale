@@ -15,10 +15,12 @@
 
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
+import eu.esdihumboldt.cst.functions.core.Rename;
 import eu.esdihumboldt.hale.common.align.model.Property;
 
 /**
- * TODO Type description
+ * Translates a property cell specifying an {@link Rename} transformation
+ * function to an app-schema attribute mapping.
  * 
  * @author Stefano Costa, GeoSolutions
  */

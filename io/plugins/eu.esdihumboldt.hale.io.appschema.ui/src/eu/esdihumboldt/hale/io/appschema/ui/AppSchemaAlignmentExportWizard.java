@@ -5,12 +5,15 @@ import eu.esdihumboldt.hale.ui.io.ExportWizard;
 
 /**
  * 
- * TODO Type description
+ * Wizard for exporting alignments as app-schema mapping configurations.
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class AppSchemaAlignmentExportWizard extends ExportWizard<AbstractAppSchemaConfigurator> {
 
+	/**
+	 * Default constructor.
+	 */
 	public AppSchemaAlignmentExportWizard() {
 		super(AbstractAppSchemaConfigurator.class);
 	}

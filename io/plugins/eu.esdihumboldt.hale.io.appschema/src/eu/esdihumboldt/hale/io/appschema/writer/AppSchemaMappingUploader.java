@@ -39,9 +39,16 @@ import eu.esdihumboldt.hale.io.geoserver.rest.DataStoreManager;
 import eu.esdihumboldt.hale.io.geoserver.rest.NamespaceManager;
 
 /**
- * TODO Type description
+ * Uploads the generated app-schema mapping configuration to a GeoServer
+ * instance using its REST API.
+ * <p>
+ * The current implementation checks for the existence of namespaces/workspaces
+ * and does not create nor update them if they already exist. On the contrary,
+ * if the target app-schema datastore already exists, it is destroyed and then
+ * re-created.
+ * </p>
  * 
- * @author stefano
+ * @author Stefano Costa, GeoSolutions
  */
 public class AppSchemaMappingUploader extends AbstractAppSchemaConfigurator {
 
@@ -95,7 +102,7 @@ public class AppSchemaMappingUploader extends AbstractAppSchemaConfigurator {
 		Workspace ws = generator.getMainWorkspace();
 
 		// build datastore resource
-		DataStore dataStore = generator.getAppSchemaDataStoreREST();
+		DataStore dataStore = generator.getAppSchemaDataStore();
 		DataStoreManager dsMgr = new DataStoreManager(geoserverURL);
 		dsMgr.setCredentials(username, password);
 		dsMgr.setResource(dataStore);

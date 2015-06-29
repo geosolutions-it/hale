@@ -5,5 +5,16 @@
 // Generated on: 2015.05.06 at 05:40:56 PM CEST 
 //
 
-@javax.xml.bind.annotation.XmlSchema(namespace = "http://www.geotools.org/app-schema")
+@XmlSchema(namespace = APP_SCHEMA_NAMESPACE, xmlns = {
+		@XmlNs(namespaceURI = APP_SCHEMA_NAMESPACE, prefix = APP_SCHEMA_PREFIX),
+		@XmlNs(namespaceURI = "http://www.opengis.net/ogc", prefix = "ogc"),
+		@XmlNs(namespaceURI = "http://www.opengis.net/gml", prefix = "gml"),
+		@XmlNs(namespaceURI = "http://www.w3.org/1999/xlink", prefix = "xlink") })
 package org.geotools.app_schema;
+
+import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.APP_SCHEMA_NAMESPACE;
+import static eu.esdihumboldt.hale.io.appschema.AppSchemaIO.APP_SCHEMA_PREFIX;
+
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlSchema;
+
