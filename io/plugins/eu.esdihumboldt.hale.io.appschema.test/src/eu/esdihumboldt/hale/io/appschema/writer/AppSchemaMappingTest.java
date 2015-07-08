@@ -32,6 +32,7 @@ import org.geotools.app_schema.AppSchemaDataAccessType;
 import org.geotools.app_schema.AttributeMappingType;
 import org.geotools.app_schema.AttributeMappingType.ClientProperty;
 import org.geotools.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -519,6 +520,11 @@ public class AppSchemaMappingTest {
 		ClientProperty attr = attrMapping.getClientProperty().get(0);
 		assertEquals("codeSpace", attr.getName());
 		assertEquals(OCQL, attr.getValue());
+	}
+
+	@Test
+	public void fakeTest() {
+		Assert.fail();
 	}
 
 	private ListMultimap<String, Property> getDatasetIdSourceProperty() {
