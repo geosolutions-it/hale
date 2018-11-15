@@ -16,6 +16,7 @@
 package eu.esdihumboldt.hale.io.appschema.writer.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.xml.namespace.QName;
 
 import com.google.common.base.Joiner;
 
@@ -50,6 +53,8 @@ import eu.esdihumboldt.hale.io.appschema.impl.internal.generated.app_schema.Type
 import eu.esdihumboldt.hale.io.appschema.impl.internal.generated.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 import eu.esdihumboldt.hale.io.appschema.impl.internal.generated.app_schema.TypeMappingsPropertyType.FeatureTypeMapping.AttributeMappings;
 import eu.esdihumboldt.hale.io.appschema.writer.AppSchemaMappingUtils;
+import eu.esdihumboldt.hale.io.xsd.constraint.XmlElements;
+import eu.esdihumboldt.hale.io.xsd.model.XmlElement;
 
 /**
  * App-schema mapping configuration wrapper.
@@ -166,7 +171,8 @@ public class AppSchemaMappingWrapper {
 				// update prefix if provided prefix is not empty and currently
 				// assigned prefix was made up
 				Namespace ns = namespaceUriMap.get(namespaceURI);
-				if (prefix != null && !prefix.isEmpty() && ns.getPrefix().startsWith(defaultPrefix)) {
+				if (prefix != null && !prefix.isEmpty()
+						&& ns.getPrefix().startsWith(defaultPrefix)) {
 					// // check prefix is unique
 					// if (!namespacePrefixMap.containsKey(prefix)) {
 					// remove old prefix-NS mapping from namespacePrefixMap
@@ -328,12 +334,7 @@ public class AppSchemaMappingWrapper {
 			featureTypeMapping.setAttributeMappings(new AttributeMappings());
 			// TODO: how do I know the datasource from which data will be read?
 			featureTypeMapping.setSourceDataStore(getDefaultDataStore().getId());
-			// TODO: I'm getting the element name with
-			// targetType.getDisplayName():
-			// isn't there a more elegant (and perhaps more reliable) way to
-			// know which element corresponds to a type?
-			featureTypeMapping.setTargetElement(targetType.getName().getPrefix() + ":"
-					+ targetType.getDisplayName());
+			featureTypeMapping.setTargetElement(getTargetElementName(targetType));
 			if (mappingName != null && !mappingName.isEmpty()) {
 				featureTypeMapping.setMappingName(mappingName);
 			}
@@ -345,6 +346,30 @@ public class AppSchemaMappingWrapper {
 		return featureTypeMappings.get(hashKey);
 	}
 
+	private String getTargetElementName(TypeDefinition targetType) {
+		// let's try first to obtain the target element name from the XML
+		// element
+		XmlElements xmlElements = targetType.getConstraint(XmlElements.class);
+		Collection<? extends XmlElement> elements = xmlElements.getElements();
+		if (elements != null && elements.size() == 1) {
+			// only use the element name if it is unique
+			QName name = elements.iterator().next().getName();
+			return getPrefix(name) + ":" + name.getLocalPart();
+		}
+		// let's try to infer the target element name using the display name
+		QName targetName = targetType.getName();
+		return getPrefix(targetName) + ":" + targetType.getDisplayName();
+	}
+
+	private String getPrefix(QName name) {
+		String prefix = name.getPrefix();
+		if (prefix == null || prefix.isEmpty()) {
+			Namespace ns = getOrCreateNamespace(name.getNamespaceURI(), name.getPrefix());
+			prefix = ns.getPrefix();
+		}
+		return prefix;
+	}
+
 	private Integer getFeatureTypeMappingHashKey(TypeDefinition targetType, String mappingName) {
 		String hashBase = targetType.getName().toString();
 		if (mappingName != null && !mappingName.isEmpty()) {
@@ -354,7 +379,8 @@ public class AppSchemaMappingWrapper {
 		return hashBase.hashCode();
 	}
 
-	private void addToFeatureTypeMappings(TypeDefinition targetType, FeatureTypeMapping typeMapping) {
+	private void addToFeatureTypeMappings(TypeDefinition targetType,
+			FeatureTypeMapping typeMapping) {
 		Map<String, Set<FeatureTypeMapping>> mappingsByTargetElement = null;
 		if (AppSchemaMappingUtils.isFeatureType(targetType)) {
 			mappingsByTargetElement = featureTypesByTargetElement;
@@ -465,9 +491,9 @@ public class AppSchemaMappingWrapper {
 	 */
 	public AttributeMappingType getOrCreateAttributeMapping(TypeDefinition owningType,
 			String mappingName, List<ChildContext> propertyPath) {
-		if (propertyPath == null || propertyPath.isEmpty()) {
-			return null;
-		}
+		// if (propertyPath == null || propertyPath.isEmpty()) {
+		// return null;
+		// }
 
 		Integer hashKey = getAttruteMappingHashKey(owningType, propertyPath);
 		if (!attributeMappings.containsKey(hashKey)) {
@@ -489,12 +515,17 @@ public class AppSchemaMappingWrapper {
 
 		if (owningType != null) {
 			pathBuilder.append(owningType.getName().toString()).append(SEPARATOR);
-			for (ChildContext childContext : propertyPath) {
-				pathBuilder.append(childContext.getChild().getName().toString());
-				if (childContext.getContextName() != null) {
-					pathBuilder.append(childContext.getContextName());
+			if (propertyPath == null || propertyPath.isEmpty()) {
+				pathBuilder.append(UUID.randomUUID().toString());
+			}
+			else {
+				for (ChildContext childContext : propertyPath) {
+					pathBuilder.append(childContext.getChild().getName().toString());
+					if (childContext.getContextName() != null) {
+						pathBuilder.append(childContext.getContextName());
+					}
+					pathBuilder.append(SEPARATOR);
 				}
-				pathBuilder.append(SEPARATOR);
 			}
 		}
 		else {
