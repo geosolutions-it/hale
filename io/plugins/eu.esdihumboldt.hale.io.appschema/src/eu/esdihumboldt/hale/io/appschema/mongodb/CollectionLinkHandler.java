@@ -22,7 +22,7 @@ public class CollectionLinkHandler implements TypeTransformationHandler {
 		TypeDefinition targetType = Utils.getXmlPropertyType(target);
 		String jsonPath = Utils.getRelativeJsonPath(source);
 		FeatureTypeMapping nested = mapping.getOrCreateFeatureTypeMapping(targetType, null);
-		nested.setSourceType(source.getDefinition().getType().getDisplayName());
+		nested.setSourceType(Utils.getRootType(source));
 		// nested.setMappingName(jsonPath.getJsonPath());
 		AttributeMappingType containerJoinMapping = mapping.getOrCreateAttributeMapping(
 				target.getDefinition().getType(), null, target.getDefinition().getPropertyPath());

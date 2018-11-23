@@ -120,6 +120,15 @@ public final class Utils {
 		return null;
 	}
 
+	public static String getRootType(Property source) {
+		JsonPathConstraint propertyConstraint = source.getDefinition().getDefinition()
+				.getConstraint(JsonPathConstraint.class);
+		if (!propertyConstraint.isValid()) {
+			return null;
+		}
+		return propertyConstraint.getRootKey();
+	}
+
 	public static String getRelativeJsonPath(Property source) {
 		JsonPathConstraint propertyConstraint = source.getDefinition().getDefinition()
 				.getConstraint(JsonPathConstraint.class);
