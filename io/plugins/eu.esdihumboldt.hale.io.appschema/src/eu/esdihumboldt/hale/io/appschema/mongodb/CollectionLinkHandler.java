@@ -1,7 +1,11 @@
 package eu.esdihumboldt.hale.io.appschema.mongodb;
 
+import java.util.Iterator;
+
 import eu.esdihumboldt.hale.common.align.model.Cell;
+import eu.esdihumboldt.hale.common.align.model.ChildContext;
 import eu.esdihumboldt.hale.common.align.model.Property;
+import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 import eu.esdihumboldt.hale.io.appschema.impl.internal.generated.app_schema.AttributeExpressionMappingType;
 import eu.esdihumboldt.hale.io.appschema.impl.internal.generated.app_schema.AttributeMappingType;
@@ -10,6 +14,7 @@ import eu.esdihumboldt.hale.io.appschema.model.ChainConfiguration;
 import eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingContext;
 import eu.esdihumboldt.hale.io.appschema.writer.internal.AppSchemaMappingWrapper;
 import eu.esdihumboldt.hale.io.appschema.writer.internal.TypeTransformationHandler;
+import eu.esdihumboldt.hale.io.mongo.JsonPathConstraint;
 
 public class CollectionLinkHandler implements TypeTransformationHandler {
 
@@ -18,9 +23,26 @@ public class CollectionLinkHandler implements TypeTransformationHandler {
 			AppSchemaMappingContext context) {
 		AppSchemaMappingWrapper mapping = context.getMappingWrapper();
 		Property source = Utils.getFirstEntity(typeCell.getSource(), Utils::convertToProperty);
+		// get parent JSON path
+		Iterator<ChildContext> it = source.getDefinition().getPropertyPath().iterator();
+		System.out.println("##### JSON PATHS ########");
+		StringBuilder jsonPathb = new StringBuilder();
+		while (it.hasNext()) {
+			ChildContext c = it.next();
+			PropertyDefinition cp = c.getChild().asProperty();
+			JsonPathConstraint constraint = cp.getConstraint(JsonPathConstraint.class);
+			// System.out.println(constraint.getJsonPath());
+			// System.out.println(cp.getDisplayName());
+			jsonPathb.append(cp.getDisplayName()).append(".");
+		}
+		jsonPathb.deleteCharAt(jsonPathb.length() - 1);
+		System.out.println("##### JSON PATHS ########");
+		/////
 		Property target = Utils.getFirstEntity(typeCell.getTarget(), Utils::convertToProperty);
 		TypeDefinition targetType = Utils.getXmlPropertyType(target);
-		String jsonPath = Utils.getRelativeJsonPath(source);
+		// String jsonPath = Utils.getRelativeJsonPath(source);
+		String jsonPath = jsonPathb.toString();
+		System.out.println("HSON PATH: " + jsonPath);
 		FeatureTypeMapping nested = mapping.getOrCreateFeatureTypeMapping(targetType, null);
 		nested.setSourceType(Utils.getRootType(source));
 		// nested.setMappingName(jsonPath.getJsonPath());
