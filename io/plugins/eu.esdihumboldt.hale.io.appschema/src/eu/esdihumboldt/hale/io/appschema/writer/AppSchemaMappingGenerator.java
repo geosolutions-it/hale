@@ -42,6 +42,7 @@ import eu.esdihumboldt.hale.common.align.model.Alignment;
 import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.ChildContext;
 import eu.esdihumboldt.hale.common.align.model.Entity;
+import eu.esdihumboldt.hale.common.align.model.impl.DefaultType;
 import eu.esdihumboldt.hale.common.core.io.report.IOReporter;
 import eu.esdihumboldt.hale.common.core.io.report.impl.IOMessageImpl;
 import eu.esdihumboldt.hale.common.schema.model.PropertyDefinition;
@@ -128,7 +129,23 @@ public class AppSchemaMappingGenerator {
 
 		try {
 			AppSchemaDataAccessType mapping = loadMappingTemplate();
+
+			// get mapping prefix
+			String mappingPrefix = null;
+			try {
+
+				ListMultimap<String, ? extends Entity> s = alignment.getTypeCells().iterator()
+						.next().getSource();
+				DefaultType t = (DefaultType) s.values().iterator().next();
+				mappingPrefix = t.getDefinition().getType().getConstraint(JsonPathConstraint.class)
+						.getRootKey();
+
+			} catch (Exception e) {
+				throw e;
+			}
+
 			mappingWrapper = new AppSchemaMappingWrapper(mapping);
+			mappingWrapper.setMappingPrefix(mappingPrefix);
 
 			// create namespace objects for all target types / properties
 			// TODO: this removes all namespaces that were defined in the
@@ -254,6 +271,10 @@ public class AppSchemaMappingGenerator {
 
 		String workspaceId = (String) ws.getAttribute(Workspace.ID);
 		String dataStoreName = extractSchemaName(targetSchema.getLocation());
+		if (mainMapping.getTypeMappings().getFeatureTypeMapping().size() == 1) {
+			dataStoreName = mainMapping.getTypeMappings().getFeatureTypeMapping().get(0)
+					.getSourceType();
+		}
 		String dataStoreId = dataStoreName + "_datastore";
 		String mappingFileName = dataStoreName + ".xml";
 		Map<String, String> connectionParameters = new HashMap<String, String>();

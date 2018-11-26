@@ -134,7 +134,7 @@ public final class DocumentWalker {
 		type.setConstraint(MappableFlag.ENABLED);
 		type.setConstraint(MappingRelevantFlag.ENABLED);
 		type.setConstraint(HasValueFlag.ENABLED);
-		// type.setConstraint(jsonPath);
+		type.setConstraint(jsonPath);
 		// add the type to the schema
 		schema.addType(type);
 		return type;

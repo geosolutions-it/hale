@@ -19,6 +19,8 @@ import com.google.common.collect.ListMultimap;
 
 import eu.esdihumboldt.hale.common.align.model.Cell;
 import eu.esdihumboldt.hale.common.align.model.Entity;
+import eu.esdihumboldt.hale.common.align.model.impl.DefaultType;
+import eu.esdihumboldt.hale.common.align.model.impl.TypeEntityDefinition;
 import eu.esdihumboldt.hale.common.schema.model.TypeDefinition;
 import eu.esdihumboldt.hale.io.appschema.impl.internal.generated.app_schema.TypeMappingsPropertyType.FeatureTypeMapping;
 import eu.esdihumboldt.hale.io.mongo.JsonPathConstraint;
@@ -53,8 +55,25 @@ public abstract class SingleSourceToTargetHandler implements TypeTransformationH
 		Entity targetType = targetEntities.values().iterator().next();
 		TypeDefinition targetTypeDef = targetType.getDefinition().getType();
 
+		// check if its secondary
+		// boolean secondary = !Utils.getRootType(sourceType)
+		// .equals(source.getDefinition().getType().getDisplayName());
+
+		String mappingName = null;
+		boolean secondary = false;
+		if (sourceType instanceof DefaultType) {
+			TypeEntityDefinition t = ((DefaultType) sourceType).getDefinition();
+			JsonPathConstraint c = t.getType().getConstraint(JsonPathConstraint.class);
+			if (c != null) {
+				secondary = c.getRootKey() != null
+						&& !c.getRootKey().equals(t.getType().getDisplayName());
+				mappingName = c.getRootKey() + "-"
+						+ targetType.getDefinition().getType().getDisplayName();
+			}
+		}
+
 		FeatureTypeMapping ftMapping = context.getMappingWrapper()
-				.getOrCreateFeatureTypeMapping(targetTypeDef);
+				.getOrCreateFeatureTypeMapping(targetTypeDef, mappingName, secondary);
 
 		// handle MongoDB specific case
 		JsonPathConstraint jsonPath = sourceType.getDefinition().getType()

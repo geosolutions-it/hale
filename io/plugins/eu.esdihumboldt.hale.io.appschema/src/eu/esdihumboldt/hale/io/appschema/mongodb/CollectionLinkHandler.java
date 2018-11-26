@@ -25,7 +25,7 @@ public class CollectionLinkHandler implements TypeTransformationHandler {
 		Property source = Utils.getFirstEntity(typeCell.getSource(), Utils::convertToProperty);
 		// get parent JSON path
 		Iterator<ChildContext> it = source.getDefinition().getPropertyPath().iterator();
-		System.out.println("##### JSON PATHS ########");
+		// System.out.println("##### JSON PATHS ########");
 		StringBuilder jsonPathb = new StringBuilder();
 		while (it.hasNext()) {
 			ChildContext c = it.next();
@@ -36,18 +36,26 @@ public class CollectionLinkHandler implements TypeTransformationHandler {
 			jsonPathb.append(cp.getDisplayName()).append(".");
 		}
 		jsonPathb.deleteCharAt(jsonPathb.length() - 1);
-		System.out.println("##### JSON PATHS ########");
+		// System.out.println("##### JSON PATHS ########");
 		/////
 		Property target = Utils.getFirstEntity(typeCell.getTarget(), Utils::convertToProperty);
 		TypeDefinition targetType = Utils.getXmlPropertyType(target);
 		// String jsonPath = Utils.getRelativeJsonPath(source);
 		String jsonPath = jsonPathb.toString();
-		System.out.println("HSON PATH: " + jsonPath);
-		FeatureTypeMapping nested = mapping.getOrCreateFeatureTypeMapping(targetType, null);
+		// System.out.println("HSON PATH: " + jsonPath);
+		boolean secondary = !Utils.getRootType(source)
+				.equals(source.getDefinition().getType().getDisplayName());
+		String mappingNameNested = Utils.getRootType(source) + "-" + targetType.getDisplayName();
+		// mappingName = null;
+		FeatureTypeMapping nested = mapping.getOrCreateFeatureTypeMapping(targetType,
+				mappingNameNested, true);
 		nested.setSourceType(Utils.getRootType(source));
 		// nested.setMappingName(jsonPath.getJsonPath());
+		String mappingNameContainer = Utils.getRootType(source) + "-"
+				+ target.getDefinition().getType().getDisplayName();
 		AttributeMappingType containerJoinMapping = mapping.getOrCreateAttributeMapping(
-				target.getDefinition().getType(), null, target.getDefinition().getPropertyPath());
+				target.getDefinition().getType(), mappingNameContainer,
+				target.getDefinition().getPropertyPath());
 		containerJoinMapping.setTargetAttribute(mapping.buildAttributeXPath(
 				source.getDefinition().getDefinition().getPropertyType(),
 				target.getDefinition().getPropertyPath()));
@@ -73,7 +81,7 @@ public class CollectionLinkHandler implements TypeTransformationHandler {
 
 		// add collection id to the container
 		AttributeMappingType attributeMapping = mapping.getOrCreateAttributeMapping(targetType,
-				null, null);
+				mappingNameNested, null);
 		attributeMapping.setTargetAttribute(nested.getTargetElement());
 		// set id expression
 		AttributeExpressionMappingType idExpression = new AttributeExpressionMappingType();

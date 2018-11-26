@@ -342,8 +342,8 @@ public abstract class AbstractPropertyTransformationHandler
 		EntityDefinition parentDef = AlignmentUtil.getParent(targetPropertyEntityDef);
 		if (parentDef != null) {
 			List<ChildContext> parentPropertyPath = parentDef.getPropertyPath();
-			PropertyDefinition parentPropertyDef = parentPropertyPath
-					.get(parentPropertyPath.size() - 1).getChild().asProperty();
+			PropertyDefinition parentPropertyDef = parentPropertyPath.isEmpty() ? null
+					: parentPropertyPath.get(parentPropertyPath.size() - 1).getChild().asProperty();
 			if (parentPropertyDef != null) {
 				attributeMapping = mapping.getOrCreateAttributeMapping(featureType, mappingName,
 						parentPropertyPath);

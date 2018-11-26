@@ -86,6 +86,12 @@ public class AppSchemaMappingWrapper {
 
 	private final AppSchemaDataAccessType appSchemaMapping;
 
+	private String mappingPrefix;
+
+	public void setMappingPrefix(String mappingPrefix) {
+		this.mappingPrefix = mappingPrefix;
+	}
+
 	/**
 	 * Constructor.
 	 * 
@@ -304,7 +310,17 @@ public class AppSchemaMappingWrapper {
 	 * @return the feature type mapping
 	 */
 	public FeatureTypeMapping getOrCreateFeatureTypeMapping(TypeDefinition targetType) {
-		return getOrCreateFeatureTypeMapping(targetType, null);
+		return getOrCreateFeatureTypeMapping(targetType, false);
+	}
+
+	public FeatureTypeMapping getOrCreateFeatureTypeMapping(TypeDefinition targetType,
+			boolean secondary) {
+		return getOrCreateFeatureTypeMapping(targetType, null, secondary);
+	}
+
+	public FeatureTypeMapping getOrCreateFeatureTypeMapping(TypeDefinition targetType,
+			String mappingName) {
+		return getOrCreateFeatureTypeMapping(targetType, mappingName, false);
 	}
 
 	/**
@@ -321,11 +337,13 @@ public class AppSchemaMappingWrapper {
 	 * @return the feature type mapping
 	 */
 	public FeatureTypeMapping getOrCreateFeatureTypeMapping(TypeDefinition targetType,
-			String mappingName) {
+			String mappingName, boolean secondary) {
 		if (targetType == null) {
 			return null;
 		}
-
+		if (mappingPrefix != null) {
+			mappingName = mappingPrefix + "-" + targetType.getDisplayName();
+		}
 		Integer hashKey = getFeatureTypeMappingHashKey(targetType, mappingName);
 		if (!featureTypeMappings.containsKey(hashKey)) {
 			// create
@@ -341,7 +359,7 @@ public class AppSchemaMappingWrapper {
 
 			appSchemaMapping.getTypeMappings().getFeatureTypeMapping().add(featureTypeMapping);
 			featureTypeMappings.put(hashKey, featureTypeMapping);
-			addToFeatureTypeMappings(targetType, featureTypeMapping);
+			addToFeatureTypeMappings(targetType, featureTypeMapping, secondary);
 		}
 		return featureTypeMappings.get(hashKey);
 	}
@@ -381,8 +399,13 @@ public class AppSchemaMappingWrapper {
 
 	private void addToFeatureTypeMappings(TypeDefinition targetType,
 			FeatureTypeMapping typeMapping) {
+		addToFeatureTypeMappings(targetType, typeMapping, false);
+	}
+
+	private void addToFeatureTypeMappings(TypeDefinition targetType, FeatureTypeMapping typeMapping,
+			boolean secondary) {
 		Map<String, Set<FeatureTypeMapping>> mappingsByTargetElement = null;
-		if (AppSchemaMappingUtils.isFeatureType(targetType)) {
+		if (AppSchemaMappingUtils.isFeatureType(targetType) && !secondary) {
 			mappingsByTargetElement = featureTypesByTargetElement;
 		}
 		else {
